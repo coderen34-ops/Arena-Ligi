@@ -34,6 +34,8 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.mac.MacYonetici mac;
     private me.arenaligi.bahis.BahisYonetici bahis;
     private me.arenaligi.seyirci.SeyirciYonetici seyirci;
+    private me.arenaligi.lig.LigEtiketi etiket;
+    private me.arenaligi.lig.SiralamaTablosu tablo;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -59,6 +61,7 @@ public class ArenaLigi extends JavaPlugin {
 
         mesaj = new Mesaj(this);
         lig = new LigSistemi(this);
+        etiket = new me.arenaligi.lig.LigEtiketi(this);
         dovusculer = new DovuscuManager(this);
         veri = new DovuscuVeri(this);
         veri.yukle();
@@ -70,6 +73,7 @@ public class ArenaLigi extends JavaPlugin {
         bahis = new me.arenaligi.bahis.BahisYonetici(this);  // Maçtan önce: emanetteki bahisler iade edilir
         seyirci = new me.arenaligi.seyirci.SeyirciYonetici(this);
         mac = new me.arenaligi.mac.MacYonetici(this);
+        tablo = new me.arenaligi.lig.SiralamaTablosu(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
         getServer().getPluginManager().registerEvents(kayitNpc, this);
@@ -77,6 +81,7 @@ public class ArenaLigi extends JavaPlugin {
         getServer().getPluginManager().registerEvents(yedek, this);
         getServer().getPluginManager().registerEvents(mac, this);
         getServer().getPluginManager().registerEvents(seyirci, this);
+        getServer().getPluginManager().registerEvents(tablo, this);
 
         ArenaKomut komut = new ArenaKomut(this);
         PluginCommand pc = getCommand("arena");
@@ -135,4 +140,6 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.mac.MacYonetici mac() { return mac; }
     public me.arenaligi.bahis.BahisYonetici bahis() { return bahis; }
     public me.arenaligi.seyirci.SeyirciYonetici seyirci() { return seyirci; }
+    public me.arenaligi.lig.LigEtiketi etiket() { return etiket; }
+    public me.arenaligi.lig.SiralamaTablosu tablo() { return tablo; }
 }

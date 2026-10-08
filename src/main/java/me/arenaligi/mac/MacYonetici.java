@@ -275,8 +275,19 @@ public class MacYonetici implements Listener {
         bankaVeKayit();
         herkeseDuyur("mac-duyuru", "&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.",
                 "baslik", mac.baslik(), "sure", beklemeMs() / 1000);
-        herkeseDuyur("bahis-acildi", "&eBahis penceresi açık! &f/arena bahis <lakap> <miktar> &7ya da Maçı İzle NPC'si &8(${min}-${max})",
-                "min", para(plugin.getConfig().getDouble("bahis.min", 50)), "max", para(plugin.getConfig().getDouble("bahis.max-mac", 5000)));
+        izleDugmesiGonder();
+    }
+
+    /** Dövüşçüler dışındaki herkese: tıklanabilir [TRİBÜNE GİT VE İZLE] düğmesi (bahis sadece tribünden). */
+    private void izleDugmesiGonder() {
+        LegacyComponentSerializer s = LegacyComponentSerializer.legacySection();
+        Component dugme = s.deserialize(m().metin("izle-dugme", "&a&l[▶ TRİBÜNE GİT VE İZLE]"))
+                .clickEvent(ClickEvent.runCommand("/arena izle"))
+                .hoverEvent(HoverEvent.showText(s.deserialize(m().metin("izle-dugme-hover", "&7Tribüne ışınlan, maçı izle ve bahis oyna\n&8Dönmek için: /arena cik"))));
+        Component bilgi = s.deserialize(m().metin("izle-dugme-bilgi", " &7Bahis sadece tribündeki izleyicilere açık &8(${min}-${max})",
+                "min", para(plugin.getConfig().getDouble("bahis.min", 50)), "max", para(plugin.getConfig().getDouble("bahis.max-mac", 5000))));
+        Component satir = s.deserialize(m().onek()).append(dugme).append(bilgi);
+        for (Player p : Bukkit.getOnlinePlayers()) if (!mac.oyuncuMu(p.getUniqueId())) p.sendMessage(satir);
     }
 
     // ------------------------------------------------------------------ 4) ARENAYA GİRİŞ
@@ -461,11 +472,23 @@ public class MacYonetici implements Listener {
     }
 
     private void ligMesaji(Dovuscu d, LigSistemi.Sonuc s) {
+        ligDegisti(d, s);
+    }
+
+    /** Lig atlama/düşme: anons, ekran yazısı ve Tag-Manager etiketi. Admin puan ayarında da kullanılır. */
+    public void ligDegisti(Dovuscu d, LigSistemi.Sonuc s) {
+        if (!s.atladi() && !s.dustu()) return;
+        plugin.etiket().guncelle(d);
+        Player p = Bukkit.getPlayer(d.uuid);
+        String lig = plugin.lig().lig(d).gorunen();
         if (s.atladi()) {
-            herkeseDuyur("lig-atladi", "&6&l▲ \"{lakap}\" &6{lig} &6ligine yükseldi!", "lakap", d.lakap, "lig", plugin.lig().lig(d).gorunen());
-        } else if (s.dustu()) {
-            Player p = Bukkit.getPlayer(d.uuid);
-            if (p != null) m().gonder(p, "lig-dustu", "&c▼ {lig} &cligine düştünüz.", "lig", plugin.lig().lig(d).gorunen());
+            herkeseDuyur("lig-atladi", "&6&l▲ \"{lakap}\" &6{lig} &6ligine yükseldi!", "lakap", d.lakap, "lig", lig);
+            // Ekran yazısı maç sonucu yazısıyla çakışmasın diye biraz sonra
+            Bukkit.getScheduler().runTaskLater(plugin, () -> titleGonder(Bukkit.getPlayer(d.uuid),
+                    m().metin("title-lig-atladi", "&6&l▲ LİG ATLADIN!"), lig, Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.2f), 50L);
+        } else if (p != null) {
+            m().gonder(p, "lig-dustu", "&c▼ {lig} &cligine düştünüz. &7(Puanınız eşiğin {pay} puan altına indi)", "lig", lig,
+                    "pay", plugin.getConfig().getInt("puan.dusme-payi", 30));
         }
     }
 
@@ -478,6 +501,7 @@ public class MacYonetici implements Listener {
         for (UUID u : bitti.oyuncular()) geriGonder(u, bitti);
         plugin.seyirci().macBitti();
         plugin.veri().kaydet();
+        plugin.tablo().guncelle();
         sonrakiEslestirme = Math.max(sonrakiEslestirme, System.currentTimeMillis() + 30_000L);
         bankaVeKayit();
     }

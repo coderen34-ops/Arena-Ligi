@@ -92,6 +92,7 @@ public class DovuscuManager {
         d.lig = plugin.lig().puanaGoreLig(0);
         ekle(d);
         plugin.veri().kaydet();
+        plugin.etiket().guncelle(d);
         plugin.meslek().ekonomiLog("arena-kayit", p.getName(), "Dövüşçü kaydı: \"" + d.lakap + "\"");
         return d;
     }

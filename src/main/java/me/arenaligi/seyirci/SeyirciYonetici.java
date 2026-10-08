@@ -150,7 +150,7 @@ public class SeyirciYonetici implements Listener {
                 List.of("&7Lig: " + (d == null ? "?" : plugin.lig().lig(d).gorunen()) + " &7| Puan: &f" + (d == null ? 0 : d.puan),
                         "&7G/M: &a" + (d == null ? 0 : d.galibiyet) + "&7/&c" + (d == null ? 0 : d.maglubiyet),
                         "&7Bahis: &e$" + MacYonetici.para(plugin.bahis().takimToplami(takim)) + " &7(" + plugin.bahis().takimKisi(takim) + " kişi)",
-                        "", bahisAcik ? "&a► Bahis oynamak için tıkla" : "&8Bahis penceresi kapalı"), bahisAcik ? "takim:" + takim : null);
+                        "", bahisAcik ? "&a► Bahis oynamak için tıkla &7(tribünde olmalısın)" : "&8Bahis penceresi kapalı"), bahisAcik ? "takim:" + takim : null);
         SkullMeta sm = (SkullMeta) kafa.getItemMeta();
         sm.setOwningPlayer(Bukkit.getOfflinePlayer(u));
         kafa.setItemMeta(sm);
@@ -204,7 +204,12 @@ public class SeyirciYonetici implements Listener {
         if (mac == null || !mac.id.equals(sahip.macId)) { p.closeInventory(); return; }
         if (veri.equals("tribun")) { p.closeInventory(); tribuneGit(p); }
         else if (veri.equals("geri")) menuAc(p);
-        else if (veri.startsWith("takim:")) miktarMenusu(p, mac, Integer.parseInt(veri.substring(6)));
+        else if (veri.startsWith("takim:")) {
+            if (!seyirciMi(p.getUniqueId())) {
+                p.closeInventory();
+                m().gonder(p, "bahis-seyirci-degil", "&cBahis oynamak için önce tribüne geçip izleyici olmalısınız: &f/arena izle");
+            } else miktarMenusu(p, mac, Integer.parseInt(veri.substring(6)));
+        }
         else if (veri.startsWith("miktar:")) {
             if (plugin.bahis().oyna(p, sahip.takim, Double.parseDouble(veri.substring(7)))) menuAc(p);
         }
@@ -227,10 +232,40 @@ public class SeyirciYonetici implements Listener {
             m().gonder(p, "izle-engel", "&cŞu an tribüne gidemezsiniz.");
             return;
         }
-        if (!seyirciler.containsKey(u)) seyirciler.put(u, p.getLocation().clone());
+        boolean zatenSeyirci = seyirciler.containsKey(u);
+        if (!zatenSeyirci) seyirciler.put(u, p.getLocation().clone());
         dosya.hemenKaydet();
         isinla(p, tribun);
         m().gonder(p, "izle-tribun", "&aTribüne hoş geldiniz! &7Dönmek için: &f/arena cik");
+        if (plugin.bahis().acikMi()) bahisDugmeleri(p, mac);
+    }
+
+    /** Seyirciye her dövüşçü için tıklanabilir bahis düğmeleri (tıklayınca miktar menüsü açılır). */
+    public void bahisDugmeleri(Player p, Mac mac) {
+        net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer s = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection();
+        net.kyori.adventure.text.Component satir = s.deserialize(m().onek() + m().metin("bahis-dugme-baslik", "&eBahis oyna: "));
+        for (int t = 0; t < mac.takimlar.size(); t++) {
+            String lakap = mac.lakaplar.get(mac.takimlar.get(t).get(0));
+            satir = satir.append(s.deserialize(m().metin("bahis-dugme", "&6&l[{lakap}] ", "lakap", lakap))
+                    .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/arena bahismenu " + t))
+                    .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(s.deserialize(m().metin("bahis-dugme-hover",
+                            "&7\"{lakap}\" için bahis miktarı seç\n&8Başka miktar: /arena bahis <lakap> <miktar>", "lakap", lakap)))));
+        }
+        p.sendMessage(satir);
+    }
+
+    /** /arena bahismenu <takım> (düğmeden) */
+    public void bahisMenusu(Player p, int takim) {
+        Mac mac = plugin.mac().aktifMac();
+        if (mac == null || !plugin.bahis().acikMi() || takim < 0 || takim >= mac.takimlar.size()) {
+            m().gonder(p, "bahis-kapali", "&cŞu an bahis penceresi açık değil (maç öncesi bekleme sırasında açılır).");
+            return;
+        }
+        if (!seyirciMi(p.getUniqueId())) {
+            m().gonder(p, "bahis-seyirci-degil", "&cBahis oynamak için önce tribüne geçip izleyici olmalısınız: &f/arena izle");
+            return;
+        }
+        miktarMenusu(p, mac, takim);
     }
 
     /** /arena cik */

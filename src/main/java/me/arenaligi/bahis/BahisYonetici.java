@@ -125,6 +125,10 @@ public class BahisYonetici {
         }
         if (takim < 0 || takim >= mac.takimlar.size()) return false;
         if (mac.oyuncuMu(u)) { m().gonder(p, "bahis-kendi", "&cKendi maçınıza bahis oynayamazsınız."); return false; }
+        if (!plugin.seyirci().seyirciMi(u)) {
+            m().gonder(p, "bahis-seyirci-degil", "&cBahis oynamak için önce tribüne geçip izleyici olmalısınız: &f/arena izle");
+            return false;
+        }
         if (!Double.isFinite(miktar) || miktar <= 0) { m().gonder(p, "gecersiz-sayi", "&cGeçersiz sayı."); return false; }
         miktar = kurus(miktar);
         Bahis onceki = bahisler.get(u);

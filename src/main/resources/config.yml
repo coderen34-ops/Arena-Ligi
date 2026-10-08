@@ -16,6 +16,11 @@ puan:
   lig-farki-carpani: 0.25   # Her lig farkı için +/-%25 (üst ligi yenen daha çok kazanır, üst lige yenilen daha az kaybeder)
   dusme-payi: 30            # Puan lig eşiğinin bu kadar altına inince bir alt lige düşülür
 
+# Tag-Manager lig etiketi (ismin en arkasında: [Klan] [Meslek] İsim [Aranıyor] [Lig]). TagPlugin kurulu değilse kullanılmaz.
+etiket:
+  aktif: true
+  format: '&8[{renk}{lig}&8]'
+
 lakap:
   min: 3
   max: 24
@@ -103,9 +108,11 @@ mesajlar:
   arena-eksik: '&eEksik: &f{eksik}'
   arena-hazir: '&aArena kurulumu tamam!'
   arena-sinir: '&cArena sınırından çıkamazsınız!'
-  bahis-acildi: '&eBahis penceresi açık! &f/arena bahis <lakap> <miktar> &7ya da Maçı İzle NPC''si &8(${min}-${max})'
   bahis-alindi: '&a{dovuscu} için ${miktar} bahis oynadınız. &7(Bu maçta toplam ${toplam}, havuz ${havuz})'
   bahis-dovuscu-yok: '&cBu maçta böyle bir dövüşçü yok: &f{baslik}'
+  bahis-dugme: '&6&l[{lakap}] '
+  bahis-dugme-baslik: '&eBahis oyna: '
+  bahis-dugme-hover: "&7\"{lakap}\" için bahis miktarı seç\n&8Başka miktar: /arena bahis <lakap> <miktar>"
   bahis-gunluk: '&cGünlük bahis sınırınız ${max} (bugün ${bugun} oynadınız).'
   bahis-iade: '&eBahisler iade edildi &7({sebep}).'
   bahis-iade-berabere: 'berabere/iptal'
@@ -120,6 +127,7 @@ mesajlar:
   bahis-max: '&cBir maçta en fazla ${max} oynayabilirsiniz (şu an ${mevcut}).'
   bahis-min: '&cEn az bahis ${min}.'
   bahis-para-yok: '&cBanka hesabınızda ${miktar} yok.'
+  bahis-seyirci-degil: '&cBahis oynamak için önce tribüne geçip izleyici olmalısınız: &f/arena izle'
   bahis-sonuc: '&6Bahis havuzu ${havuz} dağıtıldı: &f{n} kazanan &7(komisyon ${kom})'
   bahis-tek-taraf: '&cBu maçta zaten diğer tarafa oynadınız; sadece aynı tarafa ekleme yapabilirsiniz.'
   bekleme-salonu: '&aÜcret alındı (${ucret}). Bekleme salonundasınız; maç {sure} saniye sonra başlıyor. &7Işınlanma komutları kapalı.'
@@ -133,6 +141,7 @@ mesajlar:
   engel-mod: '&cArenaya katılmak için hayatta kalma modunda olmalısınız.'
   engel-olu: '&cŞu an arenaya katılamazsınız.'
   engel-yarali: '&cAğır yaralıyken arenaya katılamazsınız.'
+  etiket-yenilendi: '&a{sayi} dövüşçünün lig etiketi yeniden uygulandı.'
   gecersiz-sayi: '&cGeçersiz sayı.'
   iptal: '&eİptal edildi.'
   iptal-admin: 'yetkili iptal etti'
@@ -147,6 +156,9 @@ mesajlar:
   ist-seri: '&7Seri: &f{seri} &7| En iyi seri: &f{eniyi} &7| En yüksek puan: &f{enyuksek}'
   izle-cikti: '&eTribünden ayrıldınız.'
   izle-dovuscu: '&cKendi maçınızı tribünden izleyemezsiniz.'
+  izle-dugme: '&a&l[▶ TRİBÜNE GİT VE İZLE]'
+  izle-dugme-bilgi: ' &7Bahis sadece tribündeki izleyicilere açık &8(${min}-${max})'
+  izle-dugme-hover: "&7Tribüne ışınlan, maçı izle ve bahis oyna\n&8Dönmek için: /arena cik"
   izle-engel: '&cŞu an tribüne gidemezsiniz.'
   izle-mac-yok: '&cŞu an izlenecek bir maç yok.'
   izle-seyirci-degil: '&cTribünde değilsiniz.'
@@ -174,7 +186,7 @@ mesajlar:
   lakap-yasakli: '&cBu lakap uygunsuz bir ifade içeriyor.'
   lakap-zaman-asimi: '&cSüre doldu. Tekrar kayıt NPC''sine tıklayın.'
   lig-atladi: '&6&l▲ "{lakap}" &6{lig} &6ligine yükseldi!'
-  lig-dustu: '&c▼ {lig} &cligine düştünüz.'
+  lig-dustu: '&c▼ {lig} &cligine düştünüz. &7(Puanınız eşiğin {pay} puan altına indi)'
   mac-bahis-durum: '&7Bahis: {acik} &7| Havuz: &e${havuz}'
   mac-berabere: '&e⚔ {baslik}: &fBERABERE &7({sebep}). Giriş ücretleri iade edildi.'
   mac-durum: '&6Maç: &f{baslik} &7| Durum: &e{durum}'
@@ -213,6 +225,12 @@ mesajlar:
   siralama-bos: '&7Henüz kayıtlı dövüşçü yok.'
   siralama-satir: '&e#{sira} &f"{lakap}" &7{lig} &7- &f{puan} puan &8({g}G/{mg}M)'
   siraya-girdi: '&a"{lakap}" maç sırasına girdi! &7(Lig: {lig}&7, sırada {sayi} kişi) Çıkmak için: /arena ayril'
+  tablo-alt-baslik: '&7İlk 10 Dövüşçü'
+  tablo-baslik: '&6&l⚔ ARENA LİGİ ⚔'
+  tablo-guncellendi: '&aSıralama tablosu güncellendi. &7(Kurmak: /arena admin kur tablo, kaldırmak: /arena admin tablo sil)'
+  tablo-kuruldu: '&aSıralama tablosu kuruldu. &7Kaldırmak için: &f/arena admin tablo sil'
+  tablo-satir: '&e#{sira} &f{lakap} &8- {lig} &8- &f{puan}'
+  tablo-silindi: '&eSıralama tablosu kaldırıldı.'
   terk-dondu: '&aMaça geri döndünüz!'
   terk-uyari: '&e"{lakap}" oyundan çıktı! &7{sure} saniye içinde dönmezse yenilmiş sayılacak.'
   terk-yenik: '&c"{lakap}" maçı terk etti ve yenilmiş sayıldı.'
@@ -227,6 +245,7 @@ mesajlar:
   title-kaybettin-alt: '&7-{puan} puan'
   title-kazandin: '&a&lKAZANDIN!'
   title-kazandin-alt: '&7+{puan} puan, +${odul}'
+  title-lig-atladi: '&6&l▲ LİG ATLADIN!'
   ucret-yetersiz: '&cBanka hesabınızda giriş ücreti (${ucret}) yok. Sıradan çıkarıldınız.'
   yardim-baslik: '&6--- Arena Ligi ---'
   yardim-kayit: '&7Kayıt için Arena Kayıt NPC''sine sağ tıklayın.'
