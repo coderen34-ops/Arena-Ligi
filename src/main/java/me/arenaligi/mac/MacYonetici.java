@@ -271,7 +271,7 @@ public class MacYonetici implements Listener {
                     "ucret", para(mac.ucret), "sure", beklemeMs() / 1000);
         }
         durumDegis(Mac.Durum.BEKLEME);
-        dosya.hemenKaydet();
+        bankaVeKayit();
         herkeseDuyur("mac-duyuru", "&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.",
                 "baslik", mac.baslik(), "sure", beklemeMs() / 1000);
     }
@@ -472,7 +472,7 @@ public class MacYonetici implements Listener {
         for (UUID u : bitti.oyuncular()) geriGonder(u, bitti);
         plugin.veri().kaydet();
         sonrakiEslestirme = Math.max(sonrakiEslestirme, System.currentTimeMillis() + 30_000L);
-        dosya.hemenKaydet();
+        bankaVeKayit();
     }
 
     /** Oyuncuyu maç öncesi konumuna döndürür, envanterini geri verir, muafiyeti kaldırır. */
@@ -493,6 +493,15 @@ public class MacYonetici implements Listener {
         tazele(p);
         if (donus != null || yedekVardi) isinla(p, donus != null ? donus : Bukkit.getWorlds().get(0).getSpawnLocation());
         plugin.meslek().saglikMuafiyeti(u, false); // Işınlandıktan sonra (hapis cezası aldıysa Meslek hücreye alsın)
+    }
+
+    /**
+     * Para hareketinden sonra: önce Meslek bankası, sonra maç kaydı diske yazılır. Böylece çökmede
+     * iade edilecek bir ücret, bankadan düşülmüş haliyle kayıtlıdır (para çoğalmaz), ödenen para da kaybolmaz.
+     */
+    private void bankaVeKayit() {
+        if (!plugin.meslek().bankayiHemenKaydet()) plugin.getLogger().severe("[Para] MeslekSistemi bankası diske yazılamadı!");
+        dosya.hemenKaydet();
     }
 
     private void iade(UUID u, String isim, double miktar, String neden) {
@@ -581,7 +590,7 @@ public class MacYonetici implements Listener {
                 if (l != null && !plugin.yedek().yedekVarMi(u)) bekleyenDonus.put(u, l);
             }
         }
-        dosya.hemenKaydet();
+        bankaVeKayit();
     }
 
     /** Sunucu kapanırken: süren maç iptal (ücretler iade), herkes geri döner. */
