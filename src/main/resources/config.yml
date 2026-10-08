@@ -34,6 +34,15 @@ mac:
   anons-herkese: false       # Arenaya giriş anonsu (ekran ortası) herkese mi, sadece arena/tribündekilere mi
   yasak-komutlar: [tpa, tpahere, tpaccept, tpyes, home, homes, sethome, spawn, warp, warps, back, rtp, wild, tp, call, kit, ec, enderchest, hat, gamemode, gm, fly, heal, feed]
 
+# Bahis (havuz sistemi: para yaratılmaz, kazanan tarafa oynayanlar havuzu bahisleri oranında paylaşır)
+bahis:
+  min: 50
+  max-mac: 5000              # Bir oyuncunun bir maça toplam bahis üst sınırı
+  gunluk-max: 20000          # Bir oyuncunun günlük toplam bahis sınırı
+  komisyon: 0.10             # Havuzdan kesilen pay
+  komisyon-kazanan-payi: 0.5 # Komisyonun kazanan dövüşçüye giden kısmı; kalanı belediye kasasına
+  ayni-ip-engel: true        # Dövüşçüyle aynı IP'den bahis engellenir ve adminlere bildirilir
+
 # Hazır kitler: her maçta biri rastgele seçilir, iki dövüşçüye de aynısı verilir.
 #   zirh: LEATHER | CHAINMAIL | IRON | GOLDEN | DIAMOND | NETHERITE (kask, göğüslük, pantolon, bot)
 #   zirh-buyu: zırhın her parçasına (örn. "protection:1,unbreaking:1")
@@ -94,6 +103,25 @@ mesajlar:
   arena-eksik: '&eEksik: &f{eksik}'
   arena-hazir: '&aArena kurulumu tamam!'
   arena-sinir: '&cArena sınırından çıkamazsınız!'
+  bahis-acildi: '&eBahis penceresi açık! &f/arena bahis <lakap> <miktar> &7ya da Maçı İzle NPC''si &8(${min}-${max})'
+  bahis-alindi: '&a{dovuscu} için ${miktar} bahis oynadınız. &7(Bu maçta toplam ${toplam}, havuz ${havuz})'
+  bahis-dovuscu-yok: '&cBu maçta böyle bir dövüşçü yok: &f{baslik}'
+  bahis-gunluk: '&cGünlük bahis sınırınız ${max} (bugün ${bugun} oynadınız).'
+  bahis-iade: '&eBahisler iade edildi &7({sebep}).'
+  bahis-iade-berabere: 'berabere/iptal'
+  bahis-iade-tek-taraf: 'karşı tarafa bahis yok'
+  bahis-ip: '&cBu maçtaki bir dövüşçüyle aynı bağlantıdan bahis oynayamazsınız.'
+  bahis-ip-uyari: '&c[Arena] {oyuncu} dövüşçü {dovuscu} ile aynı IP''den bahis oynamaya çalıştı (maç {mac}).'
+  bahis-kapali: '&cŞu an bahis penceresi açık değil (maç öncesi bekleme sırasında açılır).'
+  bahis-kapandi: '&6Bahisler kapandı! &f{a}: &e${ta} &7({na} kişi) &8| &f{b}: &e${tb} &7({nb} kişi) &8| &7Havuz: &e${havuz}'
+  bahis-kaybettin: '&cBahsi kaybettiniz (${miktar}).'
+  bahis-kazandin: '&a&lBahsi kazandınız! &a+${kazanc} &7(oynadığınız ${miktar})'
+  bahis-kendi: '&cKendi maçınıza bahis oynayamazsınız.'
+  bahis-max: '&cBir maçta en fazla ${max} oynayabilirsiniz (şu an ${mevcut}).'
+  bahis-min: '&cEn az bahis ${min}.'
+  bahis-para-yok: '&cBanka hesabınızda ${miktar} yok.'
+  bahis-sonuc: '&6Bahis havuzu ${havuz} dağıtıldı: &f{n} kazanan &7(komisyon ${kom})'
+  bahis-tek-taraf: '&cBu maçta zaten diğer tarafa oynadınız; sadece aynı tarafa ekleme yapabilirsiniz.'
   bekleme-salonu: '&aÜcret alındı (${ucret}). Bekleme salonundasınız; maç {sure} saniye sonra başlıyor. &7Işınlanma komutları kapalı.'
   dovus-basladi: '&c&l⚔ &f{baslik} &cdövüşü başladı! &7(Kit: {kit}, süre {sure} dk)'
   dovuscu-yok: '&cBöyle bir dövüşçü bulunamadı.'
@@ -117,6 +145,13 @@ mesajlar:
   ist-lig: '&7Lig: {lig} &7| Puan: &f{puan} &7| Sıra: &f#{sira}'
   ist-mac: '&7Galibiyet: &a{g} &7| Mağlubiyet: &c{mg} &7| Berabere: &e{b} &7| Kazanma: &f%{oran}'
   ist-seri: '&7Seri: &f{seri} &7| En iyi seri: &f{eniyi} &7| En yüksek puan: &f{enyuksek}'
+  izle-cikti: '&eTribünden ayrıldınız.'
+  izle-dovuscu: '&cKendi maçınızı tribünden izleyemezsiniz.'
+  izle-engel: '&cŞu an tribüne gidemezsiniz.'
+  izle-mac-yok: '&cŞu an izlenecek bir maç yok.'
+  izle-seyirci-degil: '&cTribünde değilsiniz.'
+  izle-tribun: '&aTribüne hoş geldiniz! &7Dönmek için: &f/arena cik'
+  izle-tribun-yok: '&cTribün ayarlanmamış.'
   kart: '&6"{lakap}" &7| Lig: {lig} &7| Puan: &f{puan} &7| G/M/B: &a{g}&7/&c{mg}&7/&e{b}'
   kart-ipucu: '&7Maç sırası: &f/arena sira &7| İstatistik: &f/arena istatistik &7| Sıralama: &f/arena siralama'
   kayit-tamam: '&a&l"{lakap}" &aartık bir arena dövüşçüsü! &7Lig: {lig}&7. Maç sırasına girmek için: &f/arena sira'
@@ -140,6 +175,7 @@ mesajlar:
   lakap-zaman-asimi: '&cSüre doldu. Tekrar kayıt NPC''sine tıklayın.'
   lig-atladi: '&6&l▲ "{lakap}" &6{lig} &6ligine yükseldi!'
   lig-dustu: '&c▼ {lig} &cligine düştünüz.'
+  mac-bahis-durum: '&7Bahis: {acik} &7| Havuz: &e${havuz}'
   mac-berabere: '&e⚔ {baslik}: &fBERABERE &7({sebep}). Giriş ücretleri iade edildi.'
   mac-durum: '&6Maç: &f{baslik} &7| Durum: &e{durum}'
   mac-duyuru: '&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.'
@@ -148,7 +184,11 @@ mesajlar:
   mac-sonuc: '&6&l⚔ {kazanan} &6kazandı! &7({baslik} - {sebep}) &a+{kazanc} &7/ &c-{kayip} puan'
   mac-yok: '&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.'
   mac-yok-admin: '&7Süren maç yok.'
+  menu-bahis-baslik: '&8Bahis: &6"{lakap}"'
+  menu-izle-baslik: '&8Arena: &6{baslik}'
   nokta-ayarlandi: '&a{nokta} ayarlandı &7({aciklama})'
+  npc-izle-isim: '&6&lMaçı İzle'
+  npc-izle-kuruldu: '&aMaçı İzle NPC''si kuruldu.'
   npc-kayit-isim: '&c&lArena Kayıt'
   npc-kuruldu: '&aArena Kayıt NPC''si kuruldu.'
   npc-silindi: '&e{sayi} NPC silindi.'

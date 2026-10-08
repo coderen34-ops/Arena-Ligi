@@ -49,6 +49,9 @@ public class ArenaKomut implements TabExecutor {
             case "hazir", "hazır" -> plugin.mac().hazir(p);
             case "vazgec", "vazgeç" -> plugin.mac().vazgec(p);
             case "mac", "maç", "durum" -> macDurumu(p);
+            case "bahis" -> bahis(p, args);
+            case "cik", "çık" -> plugin.seyirci().cik(p);
+            case "izle" -> plugin.seyirci().menuAc(p);
             default -> yardim(p);
         }
         return true;
@@ -59,6 +62,8 @@ public class ArenaKomut implements TabExecutor {
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena sira", "aciklama", "Maç sırasına gir"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena ayril", "aciklama", "Maç sırasından çık"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena mac", "aciklama", "Süren maç / sonraki eşleştirme"));
+        s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena bahis <dövüşçü> <miktar>", "aciklama", "Maç öncesi bahis"));
+        s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena izle | /arena cik", "aciklama", "Tribüne git / tribünden çık"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena istatistik [oyuncu]", "aciklama", "Dövüşçü istatistikleri"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena siralama", "aciklama", "İlk 10 dövüşçü"));
         s.sendMessage(m().metin("yardim-kayit", "&7Kayıt için Arena Kayıt NPC'sine sağ tıklayın."));
@@ -73,6 +78,27 @@ public class ArenaKomut implements TabExecutor {
             return;
         }
         m().gonder(s, "mac-durum", "&6Maç: &f{baslik} &7| Durum: &e{durum}", "baslik", mac.baslik(), "durum", mac.durum.name());
+        if (plugin.bahis().havuz() > 0 || plugin.bahis().acikMi()) {
+            m().gonder(s, "mac-bahis-durum", "&7Bahis: {acik} &7| Havuz: &e${havuz}", "acik", plugin.bahis().acikMi() ? "&aaçık" : "&ckapalı",
+                    "havuz", me.arenaligi.mac.MacYonetici.para(plugin.bahis().havuz()));
+        }
+    }
+
+    /** /arena bahis <dövüşçü lakabı ya da adı> <miktar> (lakap boşluk içerebilir; son kelime miktardır). */
+    private void bahis(Player p, String[] args) {
+        me.arenaligi.mac.Mac mac = plugin.mac().aktifMac();
+        if (args.length < 3) { m().gonder(p, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena bahis <dövüşçü> <miktar>"); return; }
+        if (mac == null) { m().gonder(p, "bahis-kapali", "&cŞu an bahis penceresi açık değil (maç öncesi bekleme sırasında açılır)."); return; }
+        double miktar;
+        try { miktar = Double.parseDouble(args[args.length - 1].replace(",", ".")); } catch (NumberFormatException e) { m().gonder(p, "gecersiz-sayi", "&cGeçersiz sayı."); return; }
+        String hedef = me.arenaligi.model.DovuscuManager.anahtar(String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length - 1)));
+        int takim = -1;
+        for (java.util.UUID u : mac.oyuncular()) {
+            if (me.arenaligi.model.DovuscuManager.anahtar(mac.lakaplar.getOrDefault(u, "")).equals(hedef)
+                    || me.arenaligi.model.DovuscuManager.anahtar(mac.isimler.getOrDefault(u, "")).equals(hedef)) takim = mac.takimi(u);
+        }
+        if (takim < 0) { m().gonder(p, "bahis-dovuscu-yok", "&cBu maçta böyle bir dövüşçü yok: &f{baslik}", "baslik", mac.baslik()); return; }
+        plugin.bahis().oyna(p, takim, miktar);
     }
 
     private void istatistik(CommandSender s, String hedef) {
@@ -113,9 +139,10 @@ public class ArenaKomut implements TabExecutor {
             case "kur" -> {
                 if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
                 if (args.length >= 4 && args[2].equalsIgnoreCase("npc") && args[3].equalsIgnoreCase("kayit")) plugin.kayitNpc().kur(p);
+                else if (args.length >= 4 && args[2].equalsIgnoreCase("npc") && args[3].equalsIgnoreCase("izle")) plugin.seyirci().kur(p);
                 else if (args.length >= 3 && !args[2].equalsIgnoreCase("npc")) plugin.arena().kur(p, args[2]);
                 else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
-                        "/arena admin kur <" + String.join("|", me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()) + "|npc kayit>");
+                        "/arena admin kur <" + String.join("|", me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()) + "|npc kayit|npc izle>");
             }
             case "durum" -> plugin.arena().durum(s);
             case "kit" -> {
@@ -129,7 +156,11 @@ public class ArenaKomut implements TabExecutor {
             case "yedek" -> plugin.yedek().yedekKomut(s, args);
             case "npc" -> {
                 if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
-                if (args.length >= 3 && args[2].equalsIgnoreCase("sil")) plugin.kayitNpc().sil(p);
+                if (args.length >= 3 && args[2].equalsIgnoreCase("sil")) {
+                    plugin.kayitNpc().sil(p);
+                    int izle = plugin.seyirci().sil(p);
+                    if (izle > 0) m().gonder(p, "npc-silindi", "&e{sayi} NPC silindi.", "sayi", izle);
+                }
                 else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin npc sil");
             }
             case "puan" -> adminPuan(s, args);
@@ -198,7 +229,9 @@ public class ArenaKomut implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String label, String[] args) {
         List<String> o = new ArrayList<>();
         if (args.length == 1) {
-            o.addAll(List.of("sira", "ayril", "hazir", "vazgec", "mac", "istatistik", "siralama", "yardim"));
+            o.addAll(List.of("sira", "ayril", "hazir", "vazgec", "mac", "bahis", "izle", "cik", "istatistik", "siralama", "yardim"));
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("bahis") && plugin.mac().aktifMac() != null) {
+            plugin.mac().aktifMac().lakaplar.values().forEach(o::add);
             if (s.hasPermission("arena.admin")) o.add("admin");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("istatistik")) {
             plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
@@ -213,7 +246,7 @@ public class ArenaKomut implements TabExecutor {
             else if (args.length == 3 && args[1].equalsIgnoreCase("yedek")) o.addAll(List.of("liste", "geriver"));
             else if (args.length == 4 && args[1].equalsIgnoreCase("yedek")) plugin.yedek().bekleyenler().values().forEach(o::add);
             else if (args.length == 3 && args[1].equalsIgnoreCase("npc")) o.add("sil");
-            else if (args.length == 4 && args[1].equalsIgnoreCase("kur") && args[2].equalsIgnoreCase("npc")) o.add("kayit");
+            else if (args.length == 4 && args[1].equalsIgnoreCase("kur") && args[2].equalsIgnoreCase("npc")) o.addAll(List.of("kayit", "izle"));
             else if (args.length == 3 && (args[1].equalsIgnoreCase("puan") || args[1].equalsIgnoreCase("lakap"))) plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
         }
         String yazilan = args[args.length - 1].toLowerCase(Locale.ROOT);

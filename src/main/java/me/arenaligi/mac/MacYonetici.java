@@ -271,9 +271,12 @@ public class MacYonetici implements Listener {
                     "ucret", para(mac.ucret), "sure", beklemeMs() / 1000);
         }
         durumDegis(Mac.Durum.BEKLEME);
+        plugin.bahis().ac(mac);
         bankaVeKayit();
         herkeseDuyur("mac-duyuru", "&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.",
                 "baslik", mac.baslik(), "sure", beklemeMs() / 1000);
+        herkeseDuyur("bahis-acildi", "&eBahis penceresi açık! &f/arena bahis <lakap> <miktar> &7ya da Maçı İzle NPC'si &8(${min}-${max})",
+                "min", para(plugin.getConfig().getDouble("bahis.min", 50)), "max", para(plugin.getConfig().getDouble("bahis.max-mac", 5000)));
     }
 
     // ------------------------------------------------------------------ 4) ARENAYA GİRİŞ
@@ -296,6 +299,7 @@ public class MacYonetici implements Listener {
         if (mac.kit == null) { macIptal(m().metin("iptal-kit", "kit havuzu boş")); return; }
         mac.girisAdimi = 0;
         durumDegis(Mac.Durum.GIRIS);
+        plugin.bahis().kapat(mac);
     }
 
     /** gecenSn: GIRIS'e geçeli kaç saniye oldu. */
@@ -351,7 +355,8 @@ public class MacYonetici implements Listener {
         String alt = m().metin("title-giris-alt", "&fARENAYA GİRİYOR &7({lig}&7)", "lig", d == null ? "" : plugin.lig().lig(d).gorunen());
         boolean herkese = plugin.getConfig().getBoolean("mac.anons-herkese", false);
         for (Player o : Bukkit.getOnlinePlayers()) {
-            if (herkese || macta(o.getUniqueId()) || plugin.arena().tribundeMi(o.getLocation()) || plugin.arena().arenadaMi(o.getLocation())) {
+            if (herkese || macta(o.getUniqueId()) || plugin.seyirci().seyirciMi(o.getUniqueId())
+                    || plugin.arena().tribundeMi(o.getLocation()) || plugin.arena().arenadaMi(o.getLocation())) {
                 titleGonder(o, ust, alt, Sound.ITEM_GOAT_HORN_SOUND_1, 1f);
             }
         }
@@ -469,7 +474,9 @@ public class MacYonetici implements Listener {
         Mac bitti = mac;
         mac = null;
         if (iade) for (UUID u : bitti.odeyenler) iade(u, bitti.isimler.get(u), bitti.ucret, "giriş ücreti (maç " + bitti.id + ")");
+        plugin.bahis().sonuclandir(bitti, iade ? -1 : kazanan);
         for (UUID u : bitti.oyuncular()) geriGonder(u, bitti);
+        plugin.seyirci().macBitti();
         plugin.veri().kaydet();
         sonrakiEslestirme = Math.max(sonrakiEslestirme, System.currentTimeMillis() + 30_000L);
         bankaVeKayit();
@@ -501,6 +508,7 @@ public class MacYonetici implements Listener {
      */
     private void bankaVeKayit() {
         if (!plugin.meslek().bankayiHemenKaydet()) plugin.getLogger().severe("[Para] MeslekSistemi bankası diske yazılamadı!");
+        plugin.bahis().hemenKaydet();
         dosya.hemenKaydet();
     }
 

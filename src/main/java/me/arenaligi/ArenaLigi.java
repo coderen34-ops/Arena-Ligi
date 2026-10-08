@@ -32,6 +32,8 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.kit.KitYonetici kitler;
     private me.arenaligi.kit.EnvanterYedek yedek;
     private me.arenaligi.mac.MacYonetici mac;
+    private me.arenaligi.bahis.BahisYonetici bahis;
+    private me.arenaligi.seyirci.SeyirciYonetici seyirci;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -65,6 +67,8 @@ public class ArenaLigi extends JavaPlugin {
         arena = new me.arenaligi.arena.ArenaYonetici(this);
         kitler = new me.arenaligi.kit.KitYonetici(this);
         yedek = new me.arenaligi.kit.EnvanterYedek(this);
+        bahis = new me.arenaligi.bahis.BahisYonetici(this);  // Maçtan önce: emanetteki bahisler iade edilir
+        seyirci = new me.arenaligi.seyirci.SeyirciYonetici(this);
         mac = new me.arenaligi.mac.MacYonetici(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
@@ -72,6 +76,7 @@ public class ArenaLigi extends JavaPlugin {
         getServer().getPluginManager().registerEvents(arena, this);
         getServer().getPluginManager().registerEvents(yedek, this);
         getServer().getPluginManager().registerEvents(mac, this);
+        getServer().getPluginManager().registerEvents(seyirci, this);
 
         ArenaKomut komut = new ArenaKomut(this);
         PluginCommand pc = getCommand("arena");
@@ -87,6 +92,7 @@ public class ArenaLigi extends JavaPlugin {
         // Süren maç iptal edilir (ücretler iade), kit kullananların eşyaları geri verilir (yedek dosyası senkron yazılır)
         if (mac != null) mac.kapanis();
         if (yedek != null) yedek.hepsiniGeriVer();
+        if (seyirci != null) seyirci.hemenKaydet();
         kapaniyor = true;
         if (yazici != null) {
             yazici.shutdown();
@@ -127,4 +133,6 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.kit.KitYonetici kitler() { return kitler; }
     public me.arenaligi.kit.EnvanterYedek yedek() { return yedek; }
     public me.arenaligi.mac.MacYonetici mac() { return mac; }
+    public me.arenaligi.bahis.BahisYonetici bahis() { return bahis; }
+    public me.arenaligi.seyirci.SeyirciYonetici seyirci() { return seyirci; }
 }
