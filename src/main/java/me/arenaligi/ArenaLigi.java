@@ -28,6 +28,9 @@ public class ArenaLigi extends JavaPlugin {
     private DovuscuVeri veri;
     private Kuyruk kuyruk;
     private KayitNpc kayitNpc;
+    private me.arenaligi.arena.ArenaYonetici arena;
+    private me.arenaligi.kit.KitYonetici kitler;
+    private me.arenaligi.kit.EnvanterYedek yedek;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -58,9 +61,14 @@ public class ArenaLigi extends JavaPlugin {
         veri.yukle();
         kuyruk = new Kuyruk(this);
         kayitNpc = new KayitNpc(this);
+        arena = new me.arenaligi.arena.ArenaYonetici(this);
+        kitler = new me.arenaligi.kit.KitYonetici(this);
+        yedek = new me.arenaligi.kit.EnvanterYedek(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
         getServer().getPluginManager().registerEvents(kayitNpc, this);
+        getServer().getPluginManager().registerEvents(arena, this);
+        getServer().getPluginManager().registerEvents(yedek, this);
 
         ArenaKomut komut = new ArenaKomut(this);
         PluginCommand pc = getCommand("arena");
@@ -73,6 +81,8 @@ public class ArenaLigi extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        // Kit kullananların eşyaları kapanmadan geri verilir (yedek dosyası senkron yazılır)
+        if (yedek != null) yedek.hepsiniGeriVer();
         kapaniyor = true;
         if (yazici != null) {
             yazici.shutdown();
@@ -83,6 +93,8 @@ public class ArenaLigi extends JavaPlugin {
             }
         }
         if (veri != null) veri.hemenKaydet();
+        if (arena != null) arena.hemenKaydet();
+        if (kitler != null) kitler.hemenKaydet();
     }
 
     /** İşi kayıt thread'inde çalıştırır; kapanışta ya da thread yoksa hemen çalıştırır. */
@@ -107,4 +119,7 @@ public class ArenaLigi extends JavaPlugin {
     public DovuscuVeri veri() { return veri; }
     public Kuyruk kuyruk() { return kuyruk; }
     public KayitNpc kayitNpc() { return kayitNpc; }
+    public me.arenaligi.arena.ArenaYonetici arena() { return arena; }
+    public me.arenaligi.kit.KitYonetici kitler() { return kitler; }
+    public me.arenaligi.kit.EnvanterYedek yedek() { return yedek; }
 }

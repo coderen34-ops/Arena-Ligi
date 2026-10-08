@@ -98,8 +98,20 @@ public class ArenaKomut implements TabExecutor {
             case "kur" -> {
                 if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
                 if (args.length >= 4 && args[2].equalsIgnoreCase("npc") && args[3].equalsIgnoreCase("kayit")) plugin.kayitNpc().kur(p);
-                else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin kur npc kayit");
+                else if (args.length >= 3 && !args[2].equalsIgnoreCase("npc")) plugin.arena().kur(p, args[2]);
+                else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
+                        "/arena admin kur <" + String.join("|", me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()) + "|npc kayit>");
             }
+            case "durum" -> plugin.arena().durum(s);
+            case "kit" -> {
+                if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
+                plugin.kitler().komut(p, args);
+            }
+            case "test" -> {
+                if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
+                plugin.yedek().test(p, args);
+            }
+            case "yedek" -> plugin.yedek().yedekKomut(s, args);
             case "npc" -> {
                 if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
                 if (args.length >= 3 && args[2].equalsIgnoreCase("sil")) plugin.kayitNpc().sil(p);
@@ -112,7 +124,7 @@ public class ArenaKomut implements TabExecutor {
                 m().gonder(s, "yenilendi", "&aAyarlar yeniden yüklendi.");
             }
             default -> m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
-                    "/arena admin <kur npc kayit | npc sil | puan <oyuncu> <miktar> | lakap <oyuncu> <yeni lakap> | yenile>");
+                    "/arena admin <kur <nokta|npc kayit> | durum | kit <liste|ekle|sil> | test <kit|bitir> | yedek <liste|geriver> | npc sil | puan | lakap | yenile>");
         }
     }
 
@@ -164,8 +176,14 @@ public class ArenaKomut implements TabExecutor {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("istatistik")) {
             plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
         } else if (args[0].equalsIgnoreCase("admin") && s.hasPermission("arena.admin")) {
-            if (args.length == 2) o.addAll(List.of("kur", "npc", "puan", "lakap", "yenile"));
-            else if (args.length == 3 && args[1].equalsIgnoreCase("kur")) o.add("npc");
+            if (args.length == 2) o.addAll(List.of("kur", "durum", "kit", "test", "yedek", "npc", "puan", "lakap", "yenile"));
+            else if (args.length == 3 && args[1].equalsIgnoreCase("kur")) { o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()); o.add("npc"); }
+            else if (args.length == 3 && args[1].equalsIgnoreCase("kit")) o.addAll(List.of("liste", "ekle", "sil"));
+            else if (args.length == 4 && args[1].equalsIgnoreCase("kit") && args[2].equalsIgnoreCase("sil")) o.addAll(plugin.kitler().adlar());
+            else if (args.length == 3 && args[1].equalsIgnoreCase("test")) o.addAll(List.of("kit", "bitir"));
+            else if (args.length == 4 && args[1].equalsIgnoreCase("test") && args[2].equalsIgnoreCase("kit")) o.addAll(plugin.kitler().adlar());
+            else if (args.length == 3 && args[1].equalsIgnoreCase("yedek")) o.addAll(List.of("liste", "geriver"));
+            else if (args.length == 4 && args[1].equalsIgnoreCase("yedek")) plugin.yedek().bekleyenler().values().forEach(o::add);
             else if (args.length == 3 && args[1].equalsIgnoreCase("npc")) o.add("sil");
             else if (args.length == 4 && args[1].equalsIgnoreCase("kur") && args[2].equalsIgnoreCase("npc")) o.add("kayit");
             else if (args.length == 3 && (args[1].equalsIgnoreCase("puan") || args[1].equalsIgnoreCase("lakap"))) plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));

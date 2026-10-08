@@ -73,12 +73,12 @@ public class YamlDosya {
         }, 20L);
     }
 
-    /** Senkron ve eksiksiz kayıt (kapanışta ya da kritik anlarda, örn. envanter yedeği). */
-    public void hemenKaydet() {
-        diskeYaz(uretici.get().saveToString());
+    /** Senkron ve eksiksiz kayıt (kapanışta ya da kritik anlarda, örn. envanter yedeği). Başarılıysa true. */
+    public boolean hemenKaydet() {
+        return diskeYaz(uretici.get().saveToString());
     }
 
-    private synchronized void diskeYaz(String icerik) {
+    private synchronized boolean diskeYaz(String icerik) {
         try {
             Files.createDirectories(dosya.getParentFile().toPath());
             if (anaDosyaBozuk) {
@@ -97,8 +97,10 @@ public class YamlDosya {
             } catch (AtomicMoveNotSupportedException e) {
                 Files.move(gecici, dosya.toPath(), StandardCopyOption.REPLACE_EXISTING);
             }
+            return true;
         } catch (IOException e) {
             plugin.getLogger().log(Level.SEVERE, dosya.getName() + " kaydedilemedi!", e);
+            return false;
         }
     }
 }
