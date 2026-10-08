@@ -1,0 +1,80 @@
+# ================================================================
+#  ARENA LİGİ
+#  Para işlemleri MeslekSistemi bankası/kasası üzerinden yapılır (MeslekAPI).
+# ================================================================
+
+# Ligler eşik puanına göre sıralanır (renk: & kodları)
+ligler:
+  - {ad: 'Çaylak', esik: 0, renk: '&7'}
+  - {ad: 'Savaşçı', esik: 150, renk: '&a'}
+  - {ad: 'Usta', esik: 400, renk: '&b'}
+  - {ad: 'Efsane', esik: 800, renk: '&6'}
+
+puan:
+  galibiyet: 25
+  maglubiyet: 20
+  lig-farki-carpani: 0.25   # Her lig farkı için +/-%25 (üst ligi yenen daha çok kazanır, üst lige yenilen daha az kaybeder)
+  dusme-payi: 30            # Puan lig eşiğinin bu kadar altına inince bir alt lige düşülür
+
+lakap:
+  min: 3
+  max: 24
+
+yasakli-kelimeler:
+  - amk
+  - orospu
+  - siktir
+  - yarrak
+  - ibne
+  - pezevenk
+  - gavat
+  - discord
+  - http
+  - www
+
+# Mesajlar (& renk kodları, {...} yer tutucuları otomatik doldurulur). Silinen anahtar kod içindeki varsayılanı kullanır.
+mesajlar:
+  onek: '&8[&cArena&8] &r'
+  admin-lakap: '&a"{eski}" lakabı "{yeni}" olarak değiştirildi.'
+  admin-puan: '&a"{lakap}" puanı: {once} -> {sonra} &7(Lig: {lig}&7)'
+  dovuscu-yok: '&cBöyle bir dövüşçü bulunamadı.'
+  engel-durusma: '&cDuruşmadayken arenaya katılamazsınız.'
+  engel-hapis: '&cHapisteyken arenaya katılamazsınız.'
+  engel-mesgul: '&cŞu an başka bir dövüştesiniz (klan savaşı ya da maç).'
+  engel-olu: '&cŞu an arenaya katılamazsınız.'
+  engel-yarali: '&cAğır yaralıyken arenaya katılamazsınız.'
+  gecersiz-sayi: '&cGeçersiz sayı.'
+  iptal: '&eİptal edildi.'
+  ist-baslik: '&6--- "{lakap}" &7({isim}) &6---'
+  ist-lig: '&7Lig: {lig} &7| Puan: &f{puan} &7| Sıra: &f#{sira}'
+  ist-mac: '&7Galibiyet: &a{g} &7| Mağlubiyet: &c{mg} &7| Berabere: &e{b} &7| Kazanma: &f%{oran}'
+  ist-seri: '&7Seri: &f{seri} &7| En iyi seri: &f{eniyi} &7| En yüksek puan: &f{enyuksek}'
+  kart: '&6"{lakap}" &7| Lig: {lig} &7| Puan: &f{puan} &7| G/M/B: &a{g}&7/&c{mg}&7/&e{b}'
+  kart-ipucu: '&7Maç sırası: &f/arena sira &7| İstatistik: &f/arena istatistik &7| Sıralama: &f/arena siralama'
+  kayit-tamam: '&a&l"{lakap}" &aartık bir arena dövüşçüsü! &7Lig: {lig}&7. Maç sırasına girmek için: &f/arena sira'
+  kayitli-degil: '&cÖnce Arena Kayıt NPC''sinden dövüşçü olarak kayıt olmalısınız.'
+  kullanim: '&cKullanım: &e{kullanim}'
+  lakap-alinmis: '&cBu lakap başka bir dövüşçüye ait.'
+  lakap-iste: '&6Arenaya hoş geldin! &fDövüşçü lakabını sohbete yaz &7(örn. Karın Deşen Albert, {min}-{max} karakter). &7İptal: &fiptal'
+  lakap-karakter: '&cLakapta sadece harf, rakam, boşluk ve kesme işareti olabilir.'
+  lakap-tekrar: '&7Tekrar yazın ya da ''iptal''.'
+  lakap-uzunluk: '&cLakap {min}-{max} karakter olmalı.'
+  lakap-yasakli: '&cBu lakap uygunsuz bir ifade içeriyor.'
+  lakap-zaman-asimi: '&cSüre doldu. Tekrar kayıt NPC''sine tıklayın.'
+  npc-kayit-isim: '&c&lArena Kayıt'
+  npc-kuruldu: '&aArena Kayıt NPC''si kuruldu.'
+  npc-silindi: '&e{sayi} NPC silindi.'
+  sadece-oyuncu: '&cBu komut sadece oyun içinden kullanılabilir.'
+  sirada-degil: '&cMaç sırasında değilsiniz.'
+  siradan-cikti: '&eMaç sırasından çıktınız.'
+  siradan-dusuruldu: '&7Maç sırasından çıkarıldınız.'
+  siralama-baslik: '&6--- Arena Ligi: İlk 10 ---'
+  siralama-bos: '&7Henüz kayıtlı dövüşçü yok.'
+  siralama-satir: '&e#{sira} &f"{lakap}" &7{lig} &7- &f{puan} puan &8({g}G/{mg}M)'
+  siraya-girdi: '&a"{lakap}" maç sırasına girdi! &7(Lig: {lig}&7, sırada {sayi} kişi) Çıkmak için: /arena ayril'
+  yardim-baslik: '&6--- Arena Ligi ---'
+  yardim-kayit: '&7Kayıt için Arena Kayıt NPC''sine sağ tıklayın.'
+  yardim-satir: '&e{komut} &7- {aciklama}'
+  yenilendi: '&aAyarlar yeniden yüklendi.'
+  yetki-yok: '&cBu işlem için yetkiniz yok.'
+  zaten-sirada: '&eZaten maç sırasındasınız. &7(Sırada {sayi} kişi) Çıkmak için: /arena ayril'
