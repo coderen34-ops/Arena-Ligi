@@ -31,6 +31,7 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.arena.ArenaYonetici arena;
     private me.arenaligi.kit.KitYonetici kitler;
     private me.arenaligi.kit.EnvanterYedek yedek;
+    private me.arenaligi.mac.MacYonetici mac;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -64,11 +65,13 @@ public class ArenaLigi extends JavaPlugin {
         arena = new me.arenaligi.arena.ArenaYonetici(this);
         kitler = new me.arenaligi.kit.KitYonetici(this);
         yedek = new me.arenaligi.kit.EnvanterYedek(this);
+        mac = new me.arenaligi.mac.MacYonetici(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
         getServer().getPluginManager().registerEvents(kayitNpc, this);
         getServer().getPluginManager().registerEvents(arena, this);
         getServer().getPluginManager().registerEvents(yedek, this);
+        getServer().getPluginManager().registerEvents(mac, this);
 
         ArenaKomut komut = new ArenaKomut(this);
         PluginCommand pc = getCommand("arena");
@@ -81,7 +84,8 @@ public class ArenaLigi extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        // Kit kullananların eşyaları kapanmadan geri verilir (yedek dosyası senkron yazılır)
+        // Süren maç iptal edilir (ücretler iade), kit kullananların eşyaları geri verilir (yedek dosyası senkron yazılır)
+        if (mac != null) mac.kapanis();
         if (yedek != null) yedek.hepsiniGeriVer();
         kapaniyor = true;
         if (yazici != null) {
@@ -122,4 +126,5 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.arena.ArenaYonetici arena() { return arena; }
     public me.arenaligi.kit.KitYonetici kitler() { return kitler; }
     public me.arenaligi.kit.EnvanterYedek yedek() { return yedek; }
+    public me.arenaligi.mac.MacYonetici mac() { return mac; }
 }

@@ -22,7 +22,8 @@ import me.arenaligi.veri.EsyaKodu;
 import me.arenaligi.veri.YamlDosya;
 
 /**
- * Kit havuzu (kitler.yml). Admin kendi üzerindeki eşyalarla kit tanımlar (envanter + zırh + offhand, büyüler dahil).
+ * Kit havuzu: config.yml'deki "hazir-kitler" + oyun içinden eklenenler (kitler.yml).
+ * Admin kendi üzerindeki eşyalarla kit tanımlayabilir (envanter + zırh + offhand, büyüler dahil); aynı adlı hazır kitin yerine geçer.
  * Her maçta havuzdan rastgele bir kit seçilir ve iki dövüşçüye de aynısı verilir.
  * Verilen her eşya PDC ile "kit eşyası" olarak işaretlenir: arenadan dışarı çıkamaz, maç sonunda/girişte silinir.
  */
@@ -32,6 +33,7 @@ public class KitYonetici {
     private final YamlDosya dosya;
     private final Map<String, ItemStack[]> kitler = new LinkedHashMap<>();
     private final Map<String, String> okunamayan = new LinkedHashMap<>(); // Bozuk kitler ham haliyle korunur
+    private final Map<String, ItemStack[]> hazirKitler = new LinkedHashMap<>(); // config.yml -> hazir-kitler
     private final NamespacedKey kitKey;
 
     public KitYonetici(ArenaLigi plugin) {
@@ -50,9 +52,67 @@ public class KitYonetici {
                 }
             }
         }
+        hazirKitleriYukle();
     }
 
     private Mesaj m() { return plugin.mesaj(); }
+
+    // ------------------------------------------------------------------ HAZIR KİTLER (config)
+    // Slotlar (PlayerInventory.getContents): 0-35 envanter, 36 bot, 37 pantolon, 38 göğüslük, 39 kask, 40 offhand
+    private static final String[] ZIRH_PARCALARI = {"_BOOTS", "_LEGGINGS", "_CHESTPLATE", "_HELMET"};
+
+    /** config.yml'deki hazır kitleri (yeniden) okur. /arena admin yenile ile de çağrılır. */
+    public void hazirKitleriYukle() {
+        hazirKitler.clear();
+        ConfigurationSection bolum = plugin.getConfig().getConfigurationSection("hazir-kitler");
+        if (bolum == null) return;
+        for (String ad : bolum.getKeys(false)) {
+            ConfigurationSection c = bolum.getConfigurationSection(ad);
+            if (c == null) continue;
+            ItemStack[] kit = new ItemStack[41];
+            String zirh = c.getString("zirh");
+            if (zirh != null) {
+                for (int i = 0; i < 4; i++) {
+                    Material mat = Material.matchMaterial(zirh.toUpperCase(Locale.ROOT) + ZIRH_PARCALARI[i]);
+                    if (mat == null) { plugin.getLogger().warning("[Kit] " + ad + ": bilinmeyen zırh türü " + zirh); break; }
+                    kit[36 + i] = esyaOku(ad, mat.name() + " 1 " + c.getString("zirh-buyu", ""));
+                }
+            }
+            int slot = 0;
+            for (String satir : c.getStringList("esyalar")) {
+                if (slot > 35) break;
+                ItemStack e = esyaOku(ad, satir);
+                if (e != null) kit[slot++] = e;
+            }
+            if (c.getString("offhand") != null) kit[40] = esyaOku(ad, c.getString("offhand"));
+            hazirKitler.put(ad.toLowerCase(Locale.ROOT), kit);
+        }
+    }
+
+    /** "DIAMOND_SWORD", "COOKED_BEEF 8", "BOW 1 power:2,unbreaking:1" */
+    private ItemStack esyaOku(String kit, String satir) {
+        String[] p = satir.trim().split("\\s+");
+        Material mat = p.length > 0 ? Material.matchMaterial(p[0]) : null;
+        if (mat == null || !mat.isItem()) { plugin.getLogger().warning("[Kit] " + kit + ": bilinmeyen eşya '" + satir + "'"); return null; }
+        int adet = 1;
+        if (p.length > 1) try { adet = Math.max(1, Math.min(mat.getMaxStackSize(), Integer.parseInt(p[1]))); } catch (NumberFormatException ignored) {}
+        ItemStack item = new ItemStack(mat, adet);
+        if (p.length > 2) {
+            for (String b : p[2].split(",")) {
+                String[] kv = b.split(":");
+                org.bukkit.enchantments.Enchantment e = kv.length == 2
+                        ? org.bukkit.Registry.ENCHANTMENT.get(NamespacedKey.minecraft(kv[0].toLowerCase(Locale.ROOT))) : null;
+                if (e == null) { plugin.getLogger().warning("[Kit] " + kit + ": bilinmeyen büyü '" + b + "'"); continue; }
+                try { item.addUnsafeEnchantment(e, Math.max(1, Integer.parseInt(kv[1]))); } catch (NumberFormatException ignored) {}
+            }
+        }
+        return item;
+    }
+
+    private ItemStack[] kitBul(String ad) {
+        ItemStack[] k = kitler.get(ad);
+        return k != null ? k : hazirKitler.get(ad);
+    }
 
     private YamlConfiguration olustur() {
         YamlConfiguration y = new YamlConfiguration();
@@ -65,12 +125,17 @@ public class KitYonetici {
 
     public void hemenKaydet() { dosya.hemenKaydet(); }
 
-    public List<String> adlar() { return new ArrayList<>(kitler.keySet()); }
-    public boolean bosMu() { return kitler.isEmpty(); }
+    /** Havuzdaki tüm kitler (hazır + oyun içi, aynı ad bir kez). */
+    public List<String> adlar() {
+        java.util.LinkedHashSet<String> s = new java.util.LinkedHashSet<>(hazirKitler.keySet());
+        s.addAll(kitler.keySet());
+        return new ArrayList<>(s);
+    }
+    public boolean bosMu() { return kitler.isEmpty() && hazirKitler.isEmpty(); }
 
     /** Havuzdan rastgele kit adı (havuz boşsa null). */
     public String rastgele() {
-        if (kitler.isEmpty()) return null;
+        if (bosMu()) return null;
         List<String> l = adlar();
         return l.get(ThreadLocalRandom.current().nextInt(l.size()));
     }
@@ -96,7 +161,7 @@ public class KitYonetici {
      * @return kit bulunduysa true
      */
     public boolean ver(Player p, String ad) {
-        ItemStack[] kit = kitler.get(ad);
+        ItemStack[] kit = kitBul(ad);
         if (kit == null) return false;
         ItemStack[] icerik = new ItemStack[p.getInventory().getSize()];
         for (int i = 0; i < Math.min(kit.length, icerik.length); i++) icerik[i] = isaretle(kit[i]);
@@ -148,16 +213,21 @@ public class KitYonetici {
                 kitler.put(ad, kopya);
                 dosya.kaydet();
                 m().gonder(p, vardi ? "kit-guncellendi" : "kit-eklendi", vardi ? "&a{ad} kiti güncellendi." : "&a{ad} kiti eklendi. &7(Havuzda {sayi} kit)",
-                        "ad", ad, "sayi", kitler.size());
+                        "ad", ad, "sayi", adlar().size());
             }
             case "sil" -> {
+                if (ad != null && !kitler.containsKey(ad) && hazirKitler.containsKey(ad)) {
+                    m().gonder(p, "kit-hazir-silinemez", "&c{ad} config.yml'deki hazır bir kit; config'ten (hazir-kitler) silin.", "ad", ad);
+                    return;
+                }
                 if (ad == null || kitler.remove(ad) == null) { m().gonder(p, "kit-yok", "&cBöyle bir kit yok."); return; }
                 dosya.kaydet();
                 m().gonder(p, "kit-silindi", "&e{ad} kiti silindi.", "ad", ad);
             }
             default -> {
-                if (kitler.isEmpty()) { m().gonder(p, "kit-liste-bos", "&7Kit havuzu boş. Eklemek için: &f/arena admin kit ekle <ad>"); return; }
-                m().gonder(p, "kit-liste", "&6Kit havuzu ({sayi}): &f{liste}", "sayi", kitler.size(), "liste", String.join(", ", kitler.keySet()));
+                if (bosMu()) { m().gonder(p, "kit-liste-bos", "&7Kit havuzu boş. Eklemek için: &f/arena admin kit ekle <ad>"); return; }
+                m().gonder(p, "kit-liste", "&6Kit havuzu ({sayi}): &f{liste}", "sayi", adlar().size(), "liste", String.join(", ", adlar()));
+                m().gonder(p, "kit-liste-not", "&7(Hazır kitler config.yml'den, eklenenler kitler.yml'den; aynı ad varsa eklenen geçerli)");
             }
         }
     }

@@ -46,6 +46,9 @@ public class ArenaKomut implements TabExecutor {
         switch (alt) {
             case "sira", "sıra" -> plugin.kuyruk().gir(p);
             case "ayril", "ayrıl" -> plugin.kuyruk().ayril(p);
+            case "hazir", "hazır" -> plugin.mac().hazir(p);
+            case "vazgec", "vazgeç" -> plugin.mac().vazgec(p);
+            case "mac", "maç", "durum" -> macDurumu(p);
             default -> yardim(p);
         }
         return true;
@@ -55,9 +58,21 @@ public class ArenaKomut implements TabExecutor {
         m().gonder(s, "yardim-baslik", "&6--- Arena Ligi ---");
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena sira", "aciklama", "Maç sırasına gir"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena ayril", "aciklama", "Maç sırasından çık"));
+        s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena mac", "aciklama", "Süren maç / sonraki eşleştirme"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena istatistik [oyuncu]", "aciklama", "Dövüşçü istatistikleri"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena siralama", "aciklama", "İlk 10 dövüşçü"));
         s.sendMessage(m().metin("yardim-kayit", "&7Kayıt için Arena Kayıt NPC'sine sağ tıklayın."));
+    }
+
+    private void macDurumu(CommandSender s) {
+        me.arenaligi.mac.Mac mac = plugin.mac().aktifMac();
+        if (mac == null) {
+            long kalan = Math.max(0, plugin.mac().sonrakiEslestirme() - System.currentTimeMillis());
+            m().gonder(s, "mac-yok", "&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.",
+                    "sayi", plugin.kuyruk().boyut(), "dk", (kalan + 59_999) / 60_000);
+            return;
+        }
+        m().gonder(s, "mac-durum", "&6Maç: &f{baslik} &7| Durum: &e{durum}", "baslik", mac.baslik(), "durum", mac.durum.name());
     }
 
     private void istatistik(CommandSender s, String hedef) {
@@ -119,8 +134,20 @@ public class ArenaKomut implements TabExecutor {
             }
             case "puan" -> adminPuan(s, args);
             case "lakap" -> adminLakap(s, args);
+            case "mac" -> {
+                String m2 = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "";
+                if (m2.equals("iptal")) {
+                    if (plugin.mac().aktifMac() == null) m().gonder(s, "mac-yok-admin", "&7Süren maç yok.");
+                    else plugin.mac().macIptal(m().metin("iptal-admin", "yetkili iptal etti"));
+                } else if (m2.equals("baslat")) {
+                    plugin.mac().hemenEslestir();
+                    m().gonder(s, "mac-eslestir", "&aEşleştirme hemen deneniyor (sırada {sayi} kişi; arena: {arena}, kit: {kit}).", "sayi", plugin.kuyruk().boyut(),
+                            "arena", plugin.arena().hazir() ? "hazır" : "eksik", "kit", plugin.kitler().bosMu() ? "yok" : plugin.kitler().adlar().size());
+                } else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin mac <baslat|iptal>");
+            }
             case "yenile" -> {
                 plugin.reloadConfig();
+                plugin.kitler().hazirKitleriYukle();
                 m().gonder(s, "yenilendi", "&aAyarlar yeniden yüklendi.");
             }
             default -> m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
@@ -171,12 +198,13 @@ public class ArenaKomut implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String label, String[] args) {
         List<String> o = new ArrayList<>();
         if (args.length == 1) {
-            o.addAll(List.of("sira", "ayril", "istatistik", "siralama", "yardim"));
+            o.addAll(List.of("sira", "ayril", "hazir", "vazgec", "mac", "istatistik", "siralama", "yardim"));
             if (s.hasPermission("arena.admin")) o.add("admin");
         } else if (args.length == 2 && args[0].equalsIgnoreCase("istatistik")) {
             plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
         } else if (args[0].equalsIgnoreCase("admin") && s.hasPermission("arena.admin")) {
-            if (args.length == 2) o.addAll(List.of("kur", "durum", "kit", "test", "yedek", "npc", "puan", "lakap", "yenile"));
+            if (args.length == 2) o.addAll(List.of("kur", "durum", "kit", "test", "yedek", "mac", "npc", "puan", "lakap", "yenile"));
+            else if (args.length == 3 && args[1].equalsIgnoreCase("mac")) o.addAll(List.of("baslat", "iptal"));
             else if (args.length == 3 && args[1].equalsIgnoreCase("kur")) { o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()); o.add("npc"); }
             else if (args.length == 3 && args[1].equalsIgnoreCase("kit")) o.addAll(List.of("liste", "ekle", "sil"));
             else if (args.length == 4 && args[1].equalsIgnoreCase("kit") && args[2].equalsIgnoreCase("sil")) o.addAll(plugin.kitler().adlar());

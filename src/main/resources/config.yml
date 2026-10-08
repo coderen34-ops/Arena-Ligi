@@ -20,6 +20,58 @@ lakap:
   min: 3
   max: 24
 
+# Maç akışı
+mac:
+  aralik-dakika: 10          # Otomatik eşleştirme bu aralıkla yapılır (sırada en az 2 uygun dövüşçü varsa)
+  onay-saniye: 30            # "Maça hazır mısın?" onay süresi
+  giris-ucreti: 500          # Bankadan alınır
+  kazanan-payi: 0.8          # Giriş ücretleri toplamının kazanana giden oranı; kalanı belediye kasasına
+  bahis-suresi-saniye: 90    # Maç öncesi bekleme salonunda geçen süre (bahis penceresi)
+  geri-sayim-saniye: 5
+  sure-dakika: 3             # Süre dolarsa daha çok hasar veren kazanır, eşitse berabere (ücretler iade)
+  terk-saniye: 60            # Maçtan çıkan bu sürede dönmezse yenilmiş sayılır
+  komsu-lig-eslesme: true    # Aynı ligde rakip yoksa bir alt/üst ligle eşleşebilir
+  anons-herkese: false       # Arenaya giriş anonsu (ekran ortası) herkese mi, sadece arena/tribündekilere mi
+  yasak-komutlar: [tpa, tpahere, tpaccept, tpyes, home, homes, sethome, spawn, warp, warps, back, rtp, wild, tp, call, kit, ec, enderchest, hat, gamemode, gm, fly, heal, feed]
+
+# Hazır kitler: her maçta biri rastgele seçilir, iki dövüşçüye de aynısı verilir.
+#   zirh: LEATHER | CHAINMAIL | IRON | GOLDEN | DIAMOND | NETHERITE (kask, göğüslük, pantolon, bot)
+#   zirh-buyu: zırhın her parçasına (örn. "protection:1,unbreaking:1")
+#   esyalar: "MALZEME [adet] [buyu:seviye,...]" (sırayla hotbar'a), offhand: kalkan vb.
+#   Oyun içinden /arena admin kit ekle <ad> ile eklenen kitler de havuza girer.
+hazir-kitler:
+  demir-mizrak:
+    zirh: IRON
+    esyalar: [IRON_SPEAR, IRON_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  elmas-kilic-kalkan:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 2']
+    offhand: SHIELD
+  elmas-balta:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_AXE, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  elmas-mizrak:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_SPEAR, DIAMOND_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+  okcu:
+    zirh: CHAINMAIL
+    zirh-buyu: 'projectile_protection:1'
+    esyalar: ['BOW 1 power:2', IRON_SWORD, 'ARROW 32', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+  arbaletci:
+    zirh: IRON
+    esyalar: ['CROSSBOW 1 quick_charge:1', STONE_AXE, 'ARROW 24', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  topuzcu:
+    zirh: IRON
+    esyalar: [MACE, IRON_SWORD, 'WIND_CHARGE 8', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  netherit-kilic:
+    zirh: NETHERITE
+    esyalar: [NETHERITE_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+
 yasakli-kelimeler:
   - amk
   - orospu
@@ -41,14 +93,26 @@ mesajlar:
   arena-durum-satir: '{durum} &e{nokta} &7- {aciklama}'
   arena-eksik: '&eEksik: &f{eksik}'
   arena-hazir: '&aArena kurulumu tamam!'
+  arena-sinir: '&cArena sınırından çıkamazsınız!'
+  bekleme-salonu: '&aÜcret alındı (${ucret}). Bekleme salonundasınız; maç {sure} saniye sonra başlıyor. &7Işınlanma komutları kapalı.'
+  dovus-basladi: '&c&l⚔ &f{baslik} &cdövüşü başladı! &7(Kit: {kit}, süre {sure} dk)'
   dovuscu-yok: '&cBöyle bir dövüşçü bulunamadı.'
+  engel-cevrimdisi: '&cÇevrimdışı.'
   engel-durusma: '&cDuruşmadayken arenaya katılamazsınız.'
   engel-hapis: '&cHapisteyken arenaya katılamazsınız.'
+  engel-macta: '&cZaten bir maçtasınız.'
   engel-mesgul: '&cŞu an başka bir dövüştesiniz (klan savaşı ya da maç).'
+  engel-mod: '&cArenaya katılmak için hayatta kalma modunda olmalısınız.'
   engel-olu: '&cŞu an arenaya katılamazsınız.'
   engel-yarali: '&cAğır yaralıyken arenaya katılamazsınız.'
   gecersiz-sayi: '&cGeçersiz sayı.'
   iptal: '&eİptal edildi.'
+  iptal-admin: 'yetkili iptal etti'
+  iptal-engel: '{oyuncu} maça çıkamıyor ({sebep})'
+  iptal-kapanis: 'sunucu kapanıyor'
+  iptal-kit: 'kit havuzu boş'
+  iptal-yedek: '{oyuncu} için envanter yedeği alınamadı'
+  isinlanma-yasak: '&cMaç sırasında ışınlanamazsınız!'
   ist-baslik: '&6--- "{lakap}" &7({isim}) &6---'
   ist-lig: '&7Lig: {lig} &7| Puan: &f{puan} &7| Sıra: &f#{sira}'
   ist-mac: '&7Galibiyet: &a{g} &7| Mağlubiyet: &c{mg} &7| Berabere: &e{b} &7| Kazanma: &f%{oran}'
@@ -58,11 +122,14 @@ mesajlar:
   kayit-tamam: '&a&l"{lakap}" &aartık bir arena dövüşçüsü! &7Lig: {lig}&7. Maç sırasına girmek için: &f/arena sira'
   kayitli-degil: '&cÖnce Arena Kayıt NPC''sinden dövüşçü olarak kayıt olmalısınız.'
   kit-bos: '&cÜzerinizde eşya yok. Kiti giyinip tekrar deneyin.'
+  kit-hazir-silinemez: '&c{ad} config.yml''deki hazır bir kit; config''ten (hazir-kitler) silin.'
   kit-kit-esyasi: '&cÜzerinde başka bir kitin eşyası var; önce temizleyin.'
   kit-liste: '&6Kit havuzu ({sayi}): &f{liste}'
   kit-liste-bos: '&7Kit havuzu boş. Eklemek için: &f/arena admin kit ekle <ad>'
+  kit-liste-not: '&7(Hazır kitler config.yml''den, eklenenler kitler.yml''den; aynı ad varsa eklenen geçerli)'
   kit-silindi: '&e{ad} kiti silindi.'
   kit-yok: '&cBöyle bir kit yok.'
+  komut-yasak: '&cMaç sırasında bu komutu kullanamazsınız.'
   kullanim: '&cKullanım: &e{kullanim}'
   lakap-alinmis: '&cBu lakap başka bir dövüşçüye ait.'
   lakap-iste: '&6Arenaya hoş geldin! &fDövüşçü lakabını sohbete yaz &7(örn. Karın Deşen Albert, {min}-{max} karakter). &7İptal: &fiptal'
@@ -71,12 +138,34 @@ mesajlar:
   lakap-uzunluk: '&cLakap {min}-{max} karakter olmalı.'
   lakap-yasakli: '&cBu lakap uygunsuz bir ifade içeriyor.'
   lakap-zaman-asimi: '&cSüre doldu. Tekrar kayıt NPC''sine tıklayın.'
+  lig-atladi: '&6&l▲ "{lakap}" &6{lig} &6ligine yükseldi!'
+  lig-dustu: '&c▼ {lig} &cligine düştünüz.'
+  mac-berabere: '&e⚔ {baslik}: &fBERABERE &7({sebep}). Giriş ücretleri iade edildi.'
+  mac-durum: '&6Maç: &f{baslik} &7| Durum: &e{durum}'
+  mac-duyuru: '&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.'
+  mac-eslestir: '&aEşleştirme hemen deneniyor (sırada {sayi} kişi; arena: {arena}, kit: {kit}).'
+  mac-iptal: '&e⚔ Maç iptal edildi: &f{baslik} &7({sebep}). Giriş ücretleri iade edildi.'
+  mac-sonuc: '&6&l⚔ {kazanan} &6kazandı! &7({baslik} - {sebep}) &a+{kazanc} &7/ &c-{kayip} puan'
+  mac-yok: '&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.'
+  mac-yok-admin: '&7Süren maç yok.'
   nokta-ayarlandi: '&a{nokta} ayarlandı &7({aciklama})'
   npc-kayit-isim: '&c&lArena Kayıt'
   npc-kuruldu: '&aArena Kayıt NPC''si kuruldu.'
   npc-silindi: '&e{sayi} NPC silindi.'
+  onay-buton-hazir: '&a&l[HAZIRIM]'
+  onay-buton-vazgec: '&c&l[VAZGEÇ]'
+  onay-hover-hazir: '&7Maçı kabul et, giriş ücreti bankandan alınır'
+  onay-rakip-yok: '&eRakibiniz maçı onaylamadı. Sırada kalmaya devam ediyorsunuz.'
+  onay-soru: '&6&lMAÇ BULUNDU! &fRakibin: &c"{rakip}" &7({lig}&7, {puan} puan). &fGiriş ücreti: &e${ucret} &7({sure} sn)'
+  onay-vazgecti: '&eMaçtan vazgeçtiniz ve sıradan çıktınız.'
+  onay-verildi: '&aHazırsın! Rakibin bekleniyor...'
+  onay-yok: '&cOnay bekleyen bir maçınız yok.'
+  onay-zaman-asimi: '&cMaçı zamanında onaylamadınız, sıradan çıkarıldınız.'
   oyuncu-yok: '&cOyuncu çevrimiçi değil (girişte otomatik geri verilir).'
   sadece-oyuncu: '&cBu komut sadece oyun içinden kullanılabilir.'
+  sebep-iki-taraf: 'iki taraf da düştü'
+  sebep-kazandi: 'rakibini yendi'
+  sebep-sure: 'süre doldu, hasar {h0} - {h1}'
   sirada-degil: '&cMaç sırasında değilsiniz.'
   siradan-cikti: '&eMaç sırasından çıktınız.'
   siradan-dusuruldu: '&7Maç sırasından çıkarıldınız.'
@@ -84,10 +173,21 @@ mesajlar:
   siralama-bos: '&7Henüz kayıtlı dövüşçü yok.'
   siralama-satir: '&e#{sira} &f"{lakap}" &7{lig} &7- &f{puan} puan &8({g}G/{mg}M)'
   siraya-girdi: '&a"{lakap}" maç sırasına girdi! &7(Lig: {lig}&7, sırada {sayi} kişi) Çıkmak için: /arena ayril'
+  terk-dondu: '&aMaça geri döndünüz!'
+  terk-uyari: '&e"{lakap}" oyundan çıktı! &7{sure} saniye içinde dönmezse yenilmiş sayılacak.'
+  terk-yenik: '&c"{lakap}" maçı terk etti ve yenilmiş sayıldı.'
   test-bitti: '&aTest bitti: eşyaların geri verildi.'
   test-kit: '&aTest: eşyaların yedeklendi, &f{kit} &akiti verildi. Bitirmek için: &f/arena admin test bitir'
   test-kit-olmadi: '&cKit verilemedi (bekleyen yedek var ya da yedek diske yazılamadı). Konsola bakın.'
   test-yedek-yok: '&eBekleyen yedeğiniz yok.'
+  title-dovus: '&c&lDÖVÜŞ!'
+  title-giris-alt: '&fARENAYA GİRİYOR &7({lig}&7)'
+  title-giris-ust: '&6&l"{lakap}"'
+  title-kaybettin: '&c&lKAYBETTİN'
+  title-kaybettin-alt: '&7-{puan} puan'
+  title-kazandin: '&a&lKAZANDIN!'
+  title-kazandin-alt: '&7+{puan} puan, +${odul}'
+  ucret-yetersiz: '&cBanka hesabınızda giriş ücreti (${ucret}) yok. Sıradan çıkarıldınız.'
   yardim-baslik: '&6--- Arena Ligi ---'
   yardim-kayit: '&7Kayıt için Arena Kayıt NPC''sine sağ tıklayın.'
   yardim-satir: '&e{komut} &7- {aciklama}'

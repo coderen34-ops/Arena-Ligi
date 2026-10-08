@@ -51,7 +51,7 @@ public class Kuyruk implements Listener {
         if (plugin.meslek().agirYaraliMi(u)) return m().metin("engel-yarali", "&cAğır yaralıyken arenaya katılamazsınız.");
         if (plugin.meslek().saglikMuafMi(u)) return m().metin("engel-mesgul", "&cŞu an başka bir dövüştesiniz (klan savaşı ya da maç).");
         if (p.isDead()) return m().metin("engel-olu", "&cŞu an arenaya katılamazsınız.");
-        return null;
+        return plugin.mac() == null ? null : plugin.mac().ekEngel(p);
     }
 
     public void gir(Player p) {
