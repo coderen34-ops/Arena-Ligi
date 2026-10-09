@@ -638,6 +638,10 @@ public class MacYonetici implements Listener {
         if (mac == null || !mac.oyuncuMu(u)) return;
         if (mac.durum == Mac.Durum.ONAY) return; // Sıradan düştü; onay zaman aşımı halleder
         mac.terk.put(u, System.currentTimeMillis());
+        // Dövüş sırasında çıkıp dönerek canı yenilemeyi engelle: çıkış anındaki can saklanır
+        if (mac.durum == Mac.Durum.DOVUS && mac.arenada.contains(u) && !event.getPlayer().isDead()) {
+            mac.terkCan.put(u, event.getPlayer().getHealth());
+        }
         mac.arenada.remove(u); // Eşyaları çıkışta geri verildi (EnvanterYedek); dönerse yeniden kit alır
         plugin.meslek().saglikMuafiyeti(u, false);
         herkeseDuyur("terk-uyari", "&e\"{lakap}\" oyundan çıktı! &7{sure} saniye içinde dönmezse yenilmiş sayılacak.",
@@ -657,6 +661,13 @@ public class MacYonetici implements Listener {
                     isinla(p, plugin.arena().bekleme());
                 } else if (!arenayaAl(p)) {
                     return;
+                } else {
+                    Double kayitliCan = mac.terkCan.remove(u);
+                    if (kayitliCan != null && mac.durum == Mac.Durum.DOVUS) {
+                        AttributeInstance azami = p.getAttribute(Attribute.MAX_HEALTH);
+                        double ust = azami != null ? azami.getValue() : 20.0;
+                        p.setHealth(Math.max(1.0, Math.min(kayitliCan, ust)));
+                    }
                 }
                 return;
             }

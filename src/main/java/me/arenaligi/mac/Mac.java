@@ -30,6 +30,7 @@ public class Mac {
     public final Map<UUID, Location> donus = new HashMap<>();     // Maç öncesi konum
     public final Map<UUID, Double> hasar = new HashMap<>();       // Rakibe verilen toplam hasar
     public final Map<UUID, Long> terk = new HashMap<>();          // Oyundan çıkan -> çıktığı an
+    public final Map<UUID, Double> terkCan = new HashMap<>();     // Dövüş sırasında çıkanın çıkış anındaki canı (dönünce can yenilenmesin)
     public final Set<UUID> arenada = new HashSet<>();             // Kit verilip arenaya girenler
     public final Set<UUID> elenen = new HashSet<>();              // Ölen / terk edip süresi dolan
     public int girisAdimi = 0;                                     // Arena giriş anonsu sırası
