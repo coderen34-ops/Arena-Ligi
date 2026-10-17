@@ -523,6 +523,7 @@ public class MacYonetici implements Listener {
         boolean yedekVardi = plugin.yedek().geriVer(p, false);
         tazele(p);
         if (donus != null || yedekVardi) isinla(p, donus != null ? donus : Bukkit.getWorlds().get(0).getSpawnLocation());
+        if (p.getGameMode() == GameMode.SPECTATOR) p.setGameMode(GameMode.SURVIVAL); // Hardcore'da ölen oyuncu izleyici modunda kalmasın
         plugin.meslek().saglikMuafiyeti(u, false); // Işınlandıktan sonra (hapis cezası aldıysa Meslek hücreye alsın)
     }
 
@@ -701,6 +702,7 @@ public class MacYonetici implements Listener {
             if (!p.isOnline()) return;
             plugin.yedek().geriVer(p, false);
             tazele(p);
+            if (p.getGameMode() == GameMode.SPECTATOR) p.setGameMode(GameMode.SURVIVAL); // Hardcore: respawn sonrası izleyici modunda kalmasın
             plugin.meslek().saglikMuafiyeti(p.getUniqueId(), false);
         });
     }
@@ -754,7 +756,7 @@ public class MacYonetici implements Listener {
     }
 
     /** Dövüşçüler sadece birbirine (dövüş başlamışken) hasar verebilir; dışarıdan müdahale yok. */
-    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH)
     public void onHasarFiltre(EntityDamageByEntityEvent event) {
         if (mac == null) return;
         Player vuran = saldiran(event);
@@ -766,7 +768,13 @@ public class MacYonetici implements Listener {
             return;
         }
         Player kurban = (Player) event.getEntity();
-        if (mac.takimi(kurban.getUniqueId()) == mac.takimi(vuran.getUniqueId())) event.setCancelled(true);
+        if (mac.takimi(kurban.getUniqueId()) == mac.takimi(vuran.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+        // Arena içindeki geçerli dövüşçü hasarı: GriefPrevention vb. koruma eklentileri bu hasarı daha
+        // düşük öncelikte iptal etmiş olabilir (claim PVP koruması); maç içi vuruşu burada serbest bırak.
+        event.setCancelled(false);
     }
 
     /** Verilen hasar (süre dolunca kazananı belirler): kurbanın kalan canından fazlası sayılmaz. */
