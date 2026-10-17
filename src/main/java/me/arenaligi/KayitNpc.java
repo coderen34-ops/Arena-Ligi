@@ -53,7 +53,9 @@ public class KayitNpc implements Listener {
         v.setPersistent(true);
         v.setRemoveWhenFarAway(false);
         v.setCollidable(false);
-        v.setProfession(Villager.Profession.WEAPONSMITH);
+        // NITWIT: bu meslekteki köylünün hiçbir zaman ticareti olmaz, bu yüzden PlayerInteractEntityEvent
+        // iptali bazen geç işlense bile (bilinen Paper/Bukkit sorunu) vanilla ticaret menüsü asla açılamaz.
+        v.setProfession(Villager.Profession.NITWIT);
         v.setCustomName(m().metin("npc-kayit-isim", "&c&lArena Kayıt"));
         v.setCustomNameVisible(true);
         v.getPersistentDataContainer().set(npcKey, PersistentDataType.BYTE, (byte) 1);

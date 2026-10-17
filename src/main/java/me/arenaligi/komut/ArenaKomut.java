@@ -149,6 +149,12 @@ public class ArenaKomut implements TabExecutor {
                         "/arena admin kur <" + String.join("|", me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()) + "|npc kayit|npc izle|tablo>");
             }
             case "durum" -> plugin.arena().durum(s);
+            case "sil" -> {
+                if (args.length < 3) {
+                    m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
+                            "/arena admin sil <" + String.join("|", me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()) + ">");
+                } else plugin.arena().sil(s, args[2]);
+            }
             case "kit" -> {
                 if (!(s instanceof Player p)) { m().gonder(s, "sadece-oyuncu", "&cBu komut sadece oyun içinden kullanılabilir."); return; }
                 plugin.kitler().komut(p, args);
@@ -191,7 +197,7 @@ public class ArenaKomut implements TabExecutor {
                 m().gonder(s, "yenilendi", "&aAyarlar yeniden yüklendi.");
             }
             default -> m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim",
-                    "/arena admin <kur <nokta|npc kayit|npc izle|tablo> | durum | kit | test | yedek | mac | npc sil | puan | lakap | tablo [sil] | etiketyenile | yenile>");
+                    "/arena admin <kur <nokta|npc kayit|npc izle|tablo> | sil <nokta> | durum | kit | test | yedek | mac | npc sil | puan | lakap | tablo [sil] | etiketyenile | yenile>");
         }
     }
 
@@ -247,9 +253,10 @@ public class ArenaKomut implements TabExecutor {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("istatistik")) {
             plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
         } else if (args[0].equalsIgnoreCase("admin") && s.hasPermission("arena.admin")) {
-            if (args.length == 2) o.addAll(List.of("kur", "durum", "kit", "test", "yedek", "mac", "npc", "puan", "lakap", "tablo", "etiketyenile", "yenile"));
+            if (args.length == 2) o.addAll(List.of("kur", "sil", "durum", "kit", "test", "yedek", "mac", "npc", "puan", "lakap", "tablo", "etiketyenile", "yenile"));
             else if (args.length == 3 && args[1].equalsIgnoreCase("mac")) o.addAll(List.of("baslat", "iptal"));
             else if (args.length == 3 && args[1].equalsIgnoreCase("kur")) { o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()); o.add("npc"); o.add("tablo"); }
+            else if (args.length == 3 && args[1].equalsIgnoreCase("sil")) o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet());
             else if (args.length == 3 && args[1].equalsIgnoreCase("tablo")) o.add("sil");
             else if (args.length == 3 && args[1].equalsIgnoreCase("kit")) o.addAll(List.of("liste", "ekle", "sil"));
             else if (args.length == 4 && args[1].equalsIgnoreCase("kit") && args[2].equalsIgnoreCase("sil")) o.addAll(plugin.kitler().adlar());

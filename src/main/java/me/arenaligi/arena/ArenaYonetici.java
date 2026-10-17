@@ -18,6 +18,8 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerBucketEmptyEvent;
 import org.bukkit.event.player.PlayerBucketFillEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 
 import me.arenaligi.ArenaLigi;
 import me.arenaligi.Konum;
@@ -113,6 +115,21 @@ public class ArenaYonetici implements Listener {
         else m().gonder(p, "arena-eksik", "&eEksik: &f{eksik}", "eksik", eksik);
     }
 
+    // ------------------------------------------------------------------ KOMUT: /arena admin sil <nokta>
+    /** Yanlış ayarlanmış bir noktayı siler, böylece tekrar /arena admin kur ile doğru yerden ayarlanabilir. */
+    public boolean sil(org.bukkit.command.CommandSender s, String nokta) {
+        String n = nokta.toLowerCase(Locale.ROOT);
+        if (!NOKTALAR.containsKey(n)) {
+            m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin sil <" + String.join("|", NOKTALAR.keySet()) + ">");
+            return false;
+        }
+        boolean vardi = ham.remove(n) != null;
+        dosya.kaydet();
+        if (vardi) m().gonder(s, "nokta-silindi", "&a{nokta} silindi. &7({aciklama})", "nokta", n, "aciklama", NOKTALAR.get(n));
+        else m().gonder(s, "nokta-ayarli-degil", "&e{nokta} zaten ayarlı değildi.", "nokta", n);
+        return vardi;
+    }
+
     public void durum(org.bukkit.command.CommandSender s) {
         m().gonder(s, "arena-durum-baslik", "&6--- Arena Kurulumu ---");
         for (Map.Entry<String, String> e : NOKTALAR.entrySet()) {
@@ -146,6 +163,15 @@ public class ArenaYonetici implements Listener {
     @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
     public void onKovaDoldur(PlayerBucketFillEvent event) {
         if (korumali(event.getBlock().getLocation()) && !event.getPlayer().hasPermission("arena.admin")) event.setCancelled(true);
+    }
+
+    /** Arena/tribün içinde kapı, kapak, geçit gibi açılabilir bloklar da (arena.admin hariç) açılamaz. */
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void onEtkilesim(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        org.bukkit.block.Block block = event.getClickedBlock();
+        if (block == null || !(block.getBlockData() instanceof org.bukkit.block.data.Openable)) return;
+        if (korumali(block.getLocation()) && !event.getPlayer().hasPermission("arena.admin")) event.setCancelled(true);
     }
 
     /** Tribündeki oyuncu hasar almaz; tribünden de kimseye hasar verilemez (ok dahil). */
