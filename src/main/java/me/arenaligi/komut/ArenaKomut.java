@@ -48,6 +48,7 @@ public class ArenaKomut implements TabExecutor {
             case "ayril", "ayrıl" -> plugin.kuyruk().ayril(p);
             case "hazir", "hazır" -> plugin.mac().hazir(p);
             case "vazgec", "vazgeç" -> plugin.mac().vazgec(p);
+            case "kitsec" -> plugin.mac().kitSec(p, args.length > 1 ? args[1] : null);
             case "mac", "maç", "durum" -> macDurumu(p);
             case "bahis" -> bahis(p, args);
             case "cik", "çık" -> plugin.seyirci().cik(p);
@@ -75,9 +76,8 @@ public class ArenaKomut implements TabExecutor {
     private void macDurumu(CommandSender s) {
         me.arenaligi.mac.Mac mac = plugin.mac().aktifMac();
         if (mac == null) {
-            long kalan = Math.max(0, plugin.mac().sonrakiEslestirme() - System.currentTimeMillis());
-            m().gonder(s, "mac-yok", "&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.",
-                    "sayi", plugin.kuyruk().boyut(), "dk", (kalan + 59_999) / 60_000);
+            m().gonder(s, "mac-yok", "&7Şu an maç yok. Sırada {sayi} kişi; 2 kişi olunca otomatik eşleşir.",
+                    "sayi", plugin.kuyruk().boyut());
             return;
         }
         m().gonder(s, "mac-durum", "&6Maç: &f{baslik} &7| Durum: &e{durum}", "baslik", mac.baslik(), "durum", mac.durum.name());

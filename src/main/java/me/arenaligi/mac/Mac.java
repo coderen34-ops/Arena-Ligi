@@ -35,6 +35,7 @@ public class Mac {
     public final Set<UUID> elenen = new HashSet<>();              // Ölen / terk edip süresi dolan
     public int girisAdimi = 0;                                     // Arena giriş anonsu sırası
     public long dovusBaslangic = 0;
+    public final Map<UUID, String> kitOylari = new HashMap<>();     // BEKLEME'de oyuncunun seçtiği kit (oy)
 
     public Mac(String id, MacBicimi bicim, List<List<UUID>> takimlar, double ucret) {
         this.id = id;

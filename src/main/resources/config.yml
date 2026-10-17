@@ -27,7 +27,7 @@ lakap:
 
 # Maç akışı
 mac:
-  aralik-dakika: 10          # Otomatik eşleştirme bu aralıkla yapılır (sırada en az 2 uygun dövüşçü varsa)
+  aralik-dakika: 10          # (Kullanılmıyor - geriye dönük uyumluluk için duruyor) Eşleştirme artık sürekli/anlık denenir
   onay-saniye: 30            # "Maça hazır mısın?" onay süresi
   giris-ucreti: 500          # Bankadan alınır
   kazanan-payi: 0.8          # Giriş ücretleri toplamının kazanana giden oranı; kalanı belediye kasasına
@@ -194,7 +194,7 @@ mesajlar:
   mac-eslestir: '&aEşleştirme hemen deneniyor (sırada {sayi} kişi; arena: {arena}, kit: {kit}).'
   mac-iptal: '&e⚔ Maç iptal edildi: &f{baslik} &7({sebep}). Giriş ücretleri iade edildi.'
   mac-sonuc: '&6&l⚔ {kazanan} &6kazandı! &7({baslik} - {sebep}) &a+{kazanc} &7/ &c-{kayip} puan'
-  mac-yok: '&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.'
+  mac-yok: '&7Şu an maç yok. Sırada {sayi} kişi; 2 kişi olunca otomatik eşleşir.'
   mac-yok-admin: '&7Süren maç yok.'
   menu-bahis-baslik: '&8Bahis: &6"{lakap}"'
   menu-izle-baslik: '&8Arena: &6{baslik}'

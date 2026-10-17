@@ -10,6 +10,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -50,7 +51,8 @@ import net.kyori.adventure.title.Title;
 
 /**
  * Otomatik maç döngüsü (saniyede bir):
- *  1) Her "aralik-dakika"da sıradan aynı lig ve en yakın puanlı iki dövüşçü eşleşir (yoksa komşu lig).
+ *  1) Sırada 2+ kişi varsa her saniye kontrol edilip aynı lig ve en yakın puanlı iki dövüşçü eşleşir (yoksa komşu lig);
+ *     bir maç biter bitmez (30 sn soğuma hariç) hemen sıradaki eşleştirme denenir, sabit bekleme yoktur.
  *  2) ONAY: "Maça hazır mısın?" (tıklanabilir, 30 sn). Onaylamayan sıradan çıkar.
  *  3) Giriş ücreti bankadan alınır, dövüşçüler bekleme salonuna ışınlanır. BEKLEME: bahis penceresi (90 sn).
  *  4) GIRIS: sırayla envanter yedeklenir, kit verilir, arenaya ışınlanır ve ekran ortasında anons edilir; geri sayım.
@@ -71,7 +73,7 @@ public class MacYonetici implements Listener {
     public MacYonetici(ArenaLigi plugin) {
         this.plugin = plugin;
         this.dosya = new YamlDosya(plugin, "aktifmac.yml", this::olustur);
-        sonrakiEslestirme = System.currentTimeMillis() + aralikMs();
+        sonrakiEslestirme = System.currentTimeMillis() + 10_000L; // Açılışta kısa bir ısınma süresi, sonrasında sürekli kontrol
         kurtar();
         Bukkit.getScheduler().runTaskTimer(plugin, this::tick, 20L, 20L);
     }
@@ -83,7 +85,6 @@ public class MacYonetici implements Listener {
         double d = plugin.getConfig().getDouble("mac." + yol, v);
         return Double.isFinite(d) && d >= 0 ? d : v;
     }
-    private long aralikMs() { return (long) (Math.max(1, c("aralik-dakika", 10)) * 60_000L); }
     private long onayMs() { return (long) (c("onay-saniye", 30) * 1000L); }
     private double girisUcreti() { return Math.round(c("giris-ucreti", 500) * 100.0) / 100.0; }
     private double kazananPayi() { return Math.min(1.0, c("kazanan-payi", 0.8)); }
@@ -105,10 +106,9 @@ public class MacYonetici implements Listener {
     private void tick() {
         long simdi = System.currentTimeMillis();
         if (mac == null) {
-            if (simdi >= sonrakiEslestirme) {
-                sonrakiEslestirme = simdi + aralikMs();
-                eslestir();
-            }
+            // Sabit "aralik-dakika" beklemesi kaldırıldı: sadece maç sonu 30 sn'lik soğuma (sonlandir())
+            // geçtiyse her tick'te (saniyede bir) tekrar eşleştirmeyi dener, boşluk bırakmaz.
+            if (simdi >= sonrakiEslestirme) eslestir();
             return;
         }
         long gecen = simdi - mac.durumBaslangic;
@@ -212,6 +212,21 @@ public class MacYonetici implements Listener {
         onayIptal(List.of(p.getUniqueId()));
     }
 
+    /** BEKLEME aşamasında kit oyu: /arena kitsec <ad>. İki dövüşçü de oy verince (ya da süre dolunca) girisBasla() sonuçlandırır. */
+    public void kitSec(Player p, String ad) {
+        if (mac == null || mac.durum != Mac.Durum.BEKLEME || !mac.oyuncuMu(p.getUniqueId())) {
+            m().gonder(p, "onay-yok", "&cOnay bekleyen bir maçınız yok.");
+            return;
+        }
+        String adKucuk = ad == null ? null : ad.toLowerCase(Locale.ROOT);
+        if (adKucuk == null || !plugin.kitler().adlar().contains(adKucuk)) {
+            m().gonder(p, "kitsec-yok", "&cBöyle bir kit yok.");
+            return;
+        }
+        mac.kitOylari.put(p.getUniqueId(), adKucuk);
+        m().gonder(p, "kitsec-verildi", "&aKit oyu: &f{kit}", "kit", adKucuk);
+    }
+
     private void onayZamanAsimi() {
         List<UUID> onaylamayan = new ArrayList<>();
         for (UUID u : mac.oyuncular()) if (!mac.onaylar.contains(u)) onaylamayan.add(u);
@@ -276,6 +291,27 @@ public class MacYonetici implements Listener {
         herkeseDuyur("mac-duyuru", "&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.",
                 "baslik", mac.baslik(), "sure", beklemeMs() / 1000);
         izleDugmesiGonder();
+        kitOylamaGonder();
+    }
+
+    /** Bekleme salonundaki dövüşçülere kit seçimi için tıklanabilir düğmeler gönderir. */
+    private void kitOylamaGonder() {
+        List<String> kitler = plugin.kitler().adlar();
+        if (kitler.isEmpty()) return;
+        LegacyComponentSerializer s = LegacyComponentSerializer.legacySection();
+        Component satir = Component.text("   ");
+        for (String ad : kitler) {
+            Component dugme = s.deserialize(m().metin("kitsec-buton", "&b&l[{kit}]", "kit", ad))
+                    .clickEvent(ClickEvent.runCommand("/arena kitsec " + ad))
+                    .hoverEvent(HoverEvent.showText(s.deserialize(m().metin("kitsec-hover", "&7Bu kite oy ver"))));
+            satir = satir.append(dugme).append(Component.text("  "));
+        }
+        for (UUID u : mac.oyuncular()) {
+            Player p = Bukkit.getPlayer(u);
+            if (p == null) continue;
+            m().gonder(p, "kitsec-soru", "&6Hangi kiti istersin? &7(İkiniz de aynısını seçerse o çıkar; farklıysa %50-%50; hiç seçilmezse rastgele.)");
+            p.sendMessage(satir);
+        }
     }
 
     /** Dövüşçüler dışındaki herkese: tıklanabilir [TRİBÜNE GİT VE İZLE] düğmesi (bahis sadece tribünden). */
@@ -306,11 +342,32 @@ public class MacYonetici implements Listener {
                 return;
             }
         }
-        mac.kit = plugin.kitler().rastgele();
+        mac.kit = kitOyuSonucu();
         if (mac.kit == null) { macIptal(m().metin("iptal-kit", "kit havuzu boş")); return; }
         mac.girisAdimi = 0;
         durumDegis(Mac.Durum.GIRIS);
         plugin.bahis().kapat(mac);
+    }
+
+    /**
+     * Kit oyu sonucu: herkes aynı kiti seçtiyse o çıkar; farklı seçtilerse ikisi arasında %50-%50 rastgele;
+     * biri ya da ikisi de oy vermediyse (veya seçilen kit artık havuzda yoksa) tamamen rastgele seçilir.
+     */
+    private String kitOyuSonucu() {
+        List<UUID> oyuncular = mac.oyuncular();
+        List<String> gecerliKitler = plugin.kitler().adlar();
+        java.util.LinkedHashSet<String> secilenler = new java.util.LinkedHashSet<>();
+        boolean herkesOyVerdi = !oyuncular.isEmpty();
+        for (UUID u : oyuncular) {
+            String oy = mac.kitOylari.get(u);
+            if (oy == null || !gecerliKitler.contains(oy)) { herkesOyVerdi = false; continue; }
+            secilenler.add(oy);
+        }
+        if (herkesOyVerdi && !secilenler.isEmpty()) {
+            List<String> l = new ArrayList<>(secilenler);
+            return l.get(ThreadLocalRandom.current().nextInt(l.size()));
+        }
+        return plugin.kitler().rastgele();
     }
 
     /** gecenSn: GIRIS'e geçeli kaç saniye oldu. */

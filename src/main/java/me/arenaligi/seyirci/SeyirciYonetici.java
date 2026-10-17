@@ -162,9 +162,8 @@ public class SeyirciYonetici implements Listener {
     public void menuAc(Player p) {
         Mac mac = plugin.mac().aktifMac();
         if (mac == null || mac.durum == Mac.Durum.ONAY) {
-            long kalan = Math.max(0, plugin.mac().sonrakiEslestirme() - System.currentTimeMillis());
-            m().gonder(p, "mac-yok", "&7Şu an maç yok. Sırada {sayi} kişi; sonraki eşleştirme ~{dk} dk sonra.",
-                    "sayi", plugin.kuyruk().boyut(), "dk", (kalan + 59_999) / 60_000);
+            m().gonder(p, "mac-yok", "&7Şu an maç yok. Sırada {sayi} kişi; 2 kişi olunca otomatik eşleşir.",
+                    "sayi", plugin.kuyruk().boyut());
             return;
         }
         Sahip sahip = new Sahip(mac.id, -1);
