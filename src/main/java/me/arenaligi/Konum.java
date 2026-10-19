@@ -38,6 +38,18 @@ public final class Konum {
         return arada(loc.getX(), a.getX(), b.getX()) && arada(loc.getY(), a.getY(), b.getY()) && arada(loc.getZ(), a.getZ(), b.getZ());
     }
 
+    /**
+     * kutuda() ile aynı ama Y eksenini (yüksekliği) HİÇ sınırlamaz, sadece X/Z (taban alanı) kontrol eder.
+     * pos1/pos2 ayarlanırken ikisi de oyuncunun ayak hizasında (aynı Y) alındığı için kutuda() ile kutu
+     * sadece 1 blok yükseklikte oluyordu; dövüşçü zıplayınca ya da bir tümsekte durunca "arena sınırı
+     * dışında" sayılıp geri itiliyordu. Arena sınırı taban alanı olarak düşünülüp dünyanın tüm yüksekliğini
+     * (bina/çukur fark etmeksizin) kapsasın diye Y burada kontrol edilmiyor.
+     */
+    public static boolean kutudaXZ(Location loc, Location a, Location b) {
+        if (a == null || b == null || loc == null || loc.getWorld() == null || !loc.getWorld().equals(a.getWorld())) return false;
+        return arada(loc.getX(), a.getX(), b.getX()) && arada(loc.getZ(), a.getZ(), b.getZ());
+    }
+
     private static boolean arada(double d, double a, double b) {
         return d >= Math.min(a, b) && d <= Math.max(a, b) + 1;
     }

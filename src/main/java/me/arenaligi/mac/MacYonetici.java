@@ -69,6 +69,14 @@ public class MacYonetici implements Listener {
     private long sonrakiEslestirme;
     private final Map<UUID, Location> bekleyenDonus = new HashMap<>(); // Maç bitince çevrimdışı/ölü olanlar -> dönülecek konum
     private final Set<UUID> izinliIsinlanma = new HashSet<>();
+    /**
+     * Mevcut maç arenaya geçtiğinde (GIRIS/DOVUS, bekleme salonu boşaldığında) kuyruktaki sıradaki en uygun
+     * çift, PARAYA/ONAYA/BAHSE DOKUNMADAN sadece bekleme salonuna ışınlanır ("sıraya alınır") - böylece maç
+     * sırasını beklerken boşta dolaşmak yerine bir sonraki maçlarına fiziksel olarak hazırlanmış olurlar.
+     * Gerçek eşleştirme (ONAY + giriş ücreti + bahis penceresi) hâlâ sadece mac==null olduğunda normal
+     * eslestir() ile olur; bu set sadece "nereye ışınlandılar" bilgisini tutar, ekonomiyle ilgisi yoktur.
+     */
+    private final Set<UUID> sirayaAlinmis = new HashSet<>();
 
     public MacYonetici(ArenaLigi plugin) {
         this.plugin = plugin;
@@ -88,7 +96,7 @@ public class MacYonetici implements Listener {
     private long onayMs() { return (long) (c("onay-saniye", 30) * 1000L); }
     private double girisUcreti() { return Math.round(c("giris-ucreti", 500) * 100.0) / 100.0; }
     private double kazananPayi() { return Math.min(1.0, c("kazanan-payi", 0.8)); }
-    private long beklemeMs() { return (long) (c("bahis-suresi-saniye", 90) * 1000L); }
+    private long beklemeMs() { return (long) (c("bahis-suresi-saniye", 45) * 1000L); }
     private int geriSayim() { return (int) c("geri-sayim-saniye", 5); }
     private long sureMs() { return (long) (c("sure-dakika", 3) * 60_000L); }
     private long terkMs() { return (long) (c("terk-saniye", 60) * 1000L); }
@@ -128,6 +136,48 @@ public class MacYonetici implements Listener {
             case DOVUS -> {
                 terkKontrol(simdi);
                 if (mac != null && simdi - mac.dovusBaslangic >= sureMs()) sureDoldu();
+            }
+        }
+        sirayaAl();
+    }
+
+    /**
+     * Mevcut maç arenaya geçtiyse (GIRIS/DOVUS - bekleme salonu artık boş) ve kuyrukta henüz kimse
+     * "sıraya alınmamışsa", eslestir() ile AYNI eşleştirme mantığıyla en uygun çifti bulup SADECE
+     * bekleme salonuna ışınlar; para alınmaz, ONAY istenmez, bahis açılmaz. Gerçek maç hâlâ mevcut
+     * maç bitip eslestir() çalışınca normal akışla (ONAY -> ödeme -> bahis) başlar; bu sadece o ana
+     * kadar boşta dolaşmasınlar, bir sonraki maça fiziksel olarak hazır beklesinler diyedir.
+     */
+    private void sirayaAl() {
+        if (mac == null || (mac.durum != Mac.Durum.GIRIS && mac.durum != Mac.Durum.DOVUS)) return;
+        if (!plugin.arena().hazir() || plugin.kitler().bosMu()) return;
+        sirayaAlinmis.removeIf(u -> !plugin.kuyruk().siradaMi(u));
+        if (!sirayaAlinmis.isEmpty()) return; // Zaten bir çift bekleme salonunda sırada, onlar gerçek maça geçene dek başkasını almıyoruz
+        List<Dovuscu> adaylar = new ArrayList<>();
+        for (UUID u : plugin.kuyruk().siradakiler()) {
+            Dovuscu d = plugin.dovusculer().get(u);
+            if (d != null && Bukkit.getPlayer(u) != null) adaylar.add(d);
+        }
+        if (adaylar.size() < 2) return;
+        boolean komsu = plugin.getConfig().getBoolean("mac.komsu-lig-eslesme", true);
+        for (Dovuscu a : adaylar) {
+            Dovuscu enIyi = null;
+            for (int ligFarki = 0; ligFarki <= (komsu ? 1 : 0) && enIyi == null; ligFarki++) {
+                for (Dovuscu b : adaylar) {
+                    if (b == a || Math.abs(b.lig - a.lig) != ligFarki) continue;
+                    if (enIyi == null || Math.abs(b.puan - a.puan) < Math.abs(enIyi.puan - a.puan)) enIyi = b;
+                }
+            }
+            if (enIyi != null) {
+                Player pa = Bukkit.getPlayer(a.uuid), pb = Bukkit.getPlayer(enIyi.uuid);
+                if (pa == null || pb == null) continue;
+                isinla(pa, plugin.arena().bekleme());
+                isinla(pb, plugin.arena().bekleme());
+                sirayaAlinmis.add(a.uuid);
+                sirayaAlinmis.add(enIyi.uuid);
+                m().gonder(pa, "siraya-alindi", "&eSıradaki maça hazırlanıyorsunuz, bekleme salonuna alındınız.");
+                m().gonder(pb, "siraya-alindi", "&eSıradaki maça hazırlanıyorsunuz, bekleme salonuna alındınız.");
+                return;
             }
         }
     }
@@ -175,6 +225,10 @@ public class MacYonetici implements Listener {
             mac.lakaplar.put(d.uuid, d.lakap);
         }
         mac.durumBaslangic = System.currentTimeMillis();
+        // Gerçek ONAY aşaması başladı: "sadece sıraya alınmış" (ışınlanmış ama para/onay istenmemiş)
+        // olarak işaretliyse o işareti kaldır ki sirayaAl() bu maç arenaya geçince bir SONRAKİ çifti alabilsin.
+        sirayaAlinmis.remove(a.uuid);
+        sirayaAlinmis.remove(b.uuid);
         for (UUID u : mac.oyuncular()) {
             Player p = Bukkit.getPlayer(u);
             if (p == null) continue;

@@ -80,7 +80,11 @@ public class ArenaYonetici implements Listener {
     public Location bekleme() { return nokta("bekleme"); }
     public Location tribun() { return nokta("tribun"); }
 
-    public boolean arenadaMi(Location l) { return Konum.kutuda(l, nokta("arena-pos1"), nokta("arena-pos2")); }
+    // ÖNEMLİ: arena sınırı Y eksenini (yüksekliği) sınırlamaz, sadece X/Z taban alanını kontrol eder.
+    // pos1/pos2 ikisi de oyuncunun ayak hizasında (aynı Y) ayarlandığından eskiden kutu 1 blok yükseklikte
+    // kalıyordu; dövüşçü zıplayınca ya da bir tümseğe çıkınca yanlışlıkla "arena sınırından çıkamazsınız"
+    // tetikleniyordu. kutudaXZ() ile arena artık o taban alanının üzerindeki/altındaki tüm yüksekliği kapsar.
+    public boolean arenadaMi(Location l) { return Konum.kutudaXZ(l, nokta("arena-pos1"), nokta("arena-pos2")); }
     public boolean tribundeMi(Location l) { return Konum.kutuda(l, nokta("tribun-pos1"), nokta("tribun-pos2")); }
 
     /** Maç için gereken eksik noktalar (boşsa arena hazır). Dünyası yüklü olmayan nokta da eksik sayılır. */

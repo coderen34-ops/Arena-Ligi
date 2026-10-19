@@ -31,7 +31,7 @@ mac:
   onay-saniye: 30            # "Maça hazır mısın?" onay süresi
   giris-ucreti: 500          # Bankadan alınır
   kazanan-payi: 0.8          # Giriş ücretleri toplamının kazanana giden oranı; kalanı belediye kasasına
-  bahis-suresi-saniye: 90    # Maç öncesi bekleme salonunda geçen süre (bahis penceresi)
+  bahis-suresi-saniye: 45    # Maç öncesi bekleme salonunda geçen süre (bahis penceresi)
   geri-sayim-saniye: 5
   sure-dakika: 3             # Süre dolarsa daha çok hasar veren kazanır, eşitse berabere (ücretler iade)
   terk-saniye: 60            # Maçtan çıkan bu sürede dönmezse yenilmiş sayılır
