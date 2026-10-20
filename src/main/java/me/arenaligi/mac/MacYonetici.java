@@ -823,10 +823,18 @@ public class MacYonetici implements Listener {
     public void onMove(PlayerMoveEvent event) {
         if (mac == null || !mac.arenada.contains(event.getPlayer().getUniqueId())) return;
         Location from = event.getFrom(), to = event.getTo();
-        if (from.getBlockX() == to.getBlockX() && from.getBlockY() == to.getBlockY() && from.getBlockZ() == to.getBlockZ()) return;
         if (mac.durum == Mac.Durum.GIRIS) {
-            event.setTo(from.clone().setDirection(to.getDirection()));
-        } else if (mac.durum == Mac.Durum.DOVUS && !plugin.arena().arenadaMi(to)) {
+            // ÖNEMLİ (geri sayımda kıpırdayabilme bugı): eski kod sadece BLOK SINIRI aşıldığında (getBlockX/Y/Z
+            // farkı) konumu düzeltiyordu - yani bir oyuncu aynı blok içinde (ör. 0.3 blok) kayabiliyor/
+            // titreyebiliyordu, bu da göz ile fark edilen "kıpırdama" olarak kalıyordu. GIRIS'te artık ondalık
+            // dahil TAM konum sabitleniyor, sadece bakış yönü (kafa çevirme) serbest.
+            if (from.getX() != to.getX() || from.getY() != to.getY() || from.getZ() != to.getZ()) {
+                event.setTo(from.clone().setDirection(to.getDirection()));
+            }
+            return;
+        }
+        if (from.getBlockX() == to.getBlockX() && from.getBlockY() == to.getBlockY() && from.getBlockZ() == to.getBlockZ()) return;
+        if (mac.durum == Mac.Durum.DOVUS && !plugin.arena().arenadaMi(to)) {
             event.setTo(from.clone().setDirection(to.getDirection()));
             m().gonder(event.getPlayer(), "arena-sinir", "&cArena sınırından çıkamazsınız!");
         }
