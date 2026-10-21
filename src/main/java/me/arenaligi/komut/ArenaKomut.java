@@ -174,6 +174,8 @@ public class ArenaKomut implements TabExecutor {
                 else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin npc sil");
             }
             case "puan" -> adminPuan(s, args);
+            case "zindan" -> plugin.etkinlik().zindanKomut(s, args);
+            case "hazine" -> plugin.etkinlik().hazineKomut(s, args);
             case "tablo" -> {
                 if (args.length > 2 && args[2].equalsIgnoreCase("sil")) plugin.tablo().sil(s);
                 else { plugin.tablo().guncelle(); m().gonder(s, "tablo-guncellendi", "&aSıralama tablosu güncellendi. &7(Kurmak: /arena admin kur tablo, kaldırmak: /arena admin tablo sil)"); }

@@ -9,6 +9,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import me.arenaligi.etkinlik.EtkinlikYonetici;
 import me.arenaligi.komut.ArenaKomut;
 import me.arenaligi.kuyruk.Kuyruk;
 import me.arenaligi.lig.LigSistemi;
@@ -36,6 +37,7 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.seyirci.SeyirciYonetici seyirci;
     private me.arenaligi.lig.LigEtiketi etiket;
     private me.arenaligi.lig.SiralamaTablosu tablo;
+    private EtkinlikYonetici etkinlik;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -74,8 +76,10 @@ public class ArenaLigi extends JavaPlugin {
         seyirci = new me.arenaligi.seyirci.SeyirciYonetici(this);
         mac = new me.arenaligi.mac.MacYonetici(this);
         tablo = new me.arenaligi.lig.SiralamaTablosu(this);
+        etkinlik = new EtkinlikYonetici(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
+        getServer().getPluginManager().registerEvents(etkinlik, this);
         getServer().getPluginManager().registerEvents(kayitNpc, this);
         getServer().getPluginManager().registerEvents(arena, this);
         getServer().getPluginManager().registerEvents(yedek, this);
@@ -110,6 +114,7 @@ public class ArenaLigi extends JavaPlugin {
         if (veri != null) veri.hemenKaydet();
         if (arena != null) arena.hemenKaydet();
         if (kitler != null) kitler.hemenKaydet();
+        if (etkinlik != null) etkinlik.hemenKaydet();
     }
 
     /** İşi kayıt thread'inde çalıştırır; kapanışta ya da thread yoksa hemen çalıştırır. */
@@ -142,4 +147,5 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.seyirci.SeyirciYonetici seyirci() { return seyirci; }
     public me.arenaligi.lig.LigEtiketi etiket() { return etiket; }
     public me.arenaligi.lig.SiralamaTablosu tablo() { return tablo; }
+    public EtkinlikYonetici etkinlik() { return etkinlik; }
 }
