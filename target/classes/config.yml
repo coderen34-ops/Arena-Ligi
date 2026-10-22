@@ -1,0 +1,296 @@
+# ================================================================
+#  ARENA LİGİ
+#  Para işlemleri MeslekSistemi bankası/kasası üzerinden yapılır (MeslekAPI).
+# ================================================================
+
+# Ligler eşik puanına göre sıralanır (renk: & kodları)
+ligler:
+  - {ad: 'Çaylak', esik: 0, renk: '&7'}
+  - {ad: 'Savaşçı', esik: 150, renk: '&a'}
+  - {ad: 'Usta', esik: 400, renk: '&b'}
+  - {ad: 'Efsane', esik: 800, renk: '&6'}
+
+puan:
+  galibiyet: 25
+  maglubiyet: 20
+  lig-farki-carpani: 0.25   # Her lig farkı için +/-%25 (üst ligi yenen daha çok kazanır, üst lige yenilen daha az kaybeder)
+  dusme-payi: 30            # Puan lig eşiğinin bu kadar altına inince bir alt lige düşülür
+
+# Tag-Manager lig etiketi (ismin en arkasında: [Klan] [Meslek] İsim [Aranıyor] [Lig]). TagPlugin kurulu değilse kullanılmaz.
+etiket:
+  aktif: true
+  format: '&8[{renk}{lig}&8]'
+
+lakap:
+  min: 3
+  max: 24
+
+# Maç akışı
+mac:
+  aralik-dakika: 10          # (Kullanılmıyor - geriye dönük uyumluluk için duruyor) Eşleştirme artık sürekli/anlık denenir
+  onay-saniye: 30            # "Maça hazır mısın?" onay süresi
+  giris-ucreti: 500          # Bankadan alınır
+  kazanan-payi: 0.8          # Giriş ücretleri toplamının kazanana giden oranı; kalanı belediye kasasına
+  bahis-suresi-saniye: 45    # Maç öncesi bekleme salonunda geçen süre (bahis penceresi)
+  geri-sayim-saniye: 5
+  sure-dakika: 3             # Süre dolarsa daha çok hasar veren kazanır, eşitse berabere (ücretler iade)
+  terk-saniye: 60            # Maçtan çıkan bu sürede dönmezse yenilmiş sayılır
+  komsu-lig-eslesme: true    # Aynı ligde rakip yoksa bir alt/üst ligle eşleşebilir
+  anons-herkese: false       # Arenaya giriş anonsu (ekran ortası) herkese mi, sadece arena/tribündekilere mi
+  yasak-komutlar: [tpa, tpahere, tpaccept, tpyes, trapped, home, homes, sethome, spawn, warp, warps, back, rtp, wild, tp, call, kit, ec, enderchest, hat, gamemode, gm, fly, heal, feed]
+
+# Bahis (havuz sistemi: para yaratılmaz, kazanan tarafa oynayanlar havuzu bahisleri oranında paylaşır)
+bahis:
+  min: 50
+  max-mac: 15000             # Bir oyuncunun bir maça toplam bahis üst sınırı
+  gunluk-max: 20000          # Bir oyuncunun günlük toplam bahis sınırı
+  komisyon: 0.10             # Havuzdan kesilen pay
+  komisyon-kazanan-payi: 0.5 # Komisyonun kazanan dövüşçüye giden kısmı; kalanı belediye kasasına
+  ayni-ip-engel: true        # Dövüşçüyle aynı IP'den bahis engellenir ve adminlere bildirilir
+
+# Hazır kitler: her maçta biri rastgele seçilir, iki dövüşçüye de aynısı verilir.
+#   zirh: LEATHER | CHAINMAIL | IRON | GOLDEN | DIAMOND | NETHERITE (kask, göğüslük, pantolon, bot)
+#   zirh-buyu: zırhın her parçasına (örn. "protection:1,unbreaking:1")
+#   esyalar: "MALZEME [adet] [buyu:seviye,...]" (sırayla hotbar'a), offhand: kalkan vb.
+#   Oyun içinden /arena admin kit ekle <ad> ile eklenen kitler de havuza girer.
+hazir-kitler:
+  demir-mizrak:
+    zirh: IRON
+    esyalar: [IRON_SPEAR, IRON_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  elmas-kilic-kalkan:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 2']
+    offhand: SHIELD
+  elmas-balta:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_AXE, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  elmas-mizrak:
+    zirh: DIAMOND
+    esyalar: [DIAMOND_SPEAR, DIAMOND_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+  okcu:
+    zirh: CHAINMAIL
+    zirh-buyu: 'projectile_protection:1'
+    esyalar: ['BOW 1 power:2', IRON_SWORD, 'ARROW 32', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+  arbaletci:
+    zirh: IRON
+    esyalar: ['CROSSBOW 1 quick_charge:1', STONE_AXE, 'ARROW 24', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  topuzcu:
+    zirh: IRON
+    esyalar: [MACE, IRON_SWORD, 'WIND_CHARGE 8', 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+  netherit-kilic:
+    zirh: NETHERITE
+    esyalar: [NETHERITE_SWORD, 'COOKED_BEEF 8', 'GOLDEN_APPLE 1']
+    offhand: SHIELD
+
+yasakli-kelimeler:
+  - amk
+  - orospu
+  - siktir
+  - yarrak
+  - ibne
+  - pezevenk
+  - gavat
+  - discord
+  - http
+  - www
+
+# Mesajlar (& renk kodları, {...} yer tutucuları otomatik doldurulur). Silinen anahtar kod içindeki varsayılanı kullanır.
+mesajlar:
+  onek: '&8[&cArena&8] &r'
+  admin-lakap: '&a"{eski}" lakabı "{yeni}" olarak değiştirildi.'
+  admin-puan: '&a"{lakap}" puanı: {once} -> {sonra} &7(Lig: {lig}&7)'
+  arena-durum-baslik: '&6--- Arena Kurulumu ---'
+  arena-durum-satir: '{durum} &e{nokta} &7- {aciklama}'
+  arena-eksik: '&eEksik: &f{eksik}'
+  arena-hazir: '&aArena kurulumu tamam!'
+  arena-sinir: '&cArena sınırından çıkamazsınız!'
+  bahis-alindi: '&a{dovuscu} için ${miktar} bahis oynadınız. &7(Bu maçta toplam ${toplam}, havuz ${havuz})'
+  bahis-dovuscu-yok: '&cBu maçta böyle bir dövüşçü yok: &f{baslik}'
+  bahis-dugme: '&6&l[{lakap}] '
+  bahis-dugme-baslik: '&eBahis oyna: '
+  bahis-dugme-hover: "&7\"{lakap}\" için bahis miktarı seç\n&8Başka miktar: /arena bahis <lakap> <miktar>"
+  bahis-gunluk: '&cGünlük bahis sınırınız ${max} (bugün ${bugun} oynadınız).'
+  bahis-iade: '&eBahisler iade edildi &7({sebep}).'
+  bahis-iade-berabere: 'berabere/iptal'
+  bahis-iade-tek-taraf: 'karşı tarafa bahis yok'
+  bahis-ip: '&cBu maçtaki bir dövüşçüyle aynı bağlantıdan bahis oynayamazsınız.'
+  bahis-ip-uyari: '&c[Arena] {oyuncu} dövüşçü {dovuscu} ile aynı IP''den bahis oynamaya çalıştı (maç {mac}).'
+  bahis-kapali: '&cŞu an bahis penceresi açık değil (maç öncesi bekleme sırasında açılır).'
+  bahis-kapandi: '&6Bahisler kapandı! &f{a}: &e${ta} &7({na} kişi) &8| &f{b}: &e${tb} &7({nb} kişi) &8| &7Havuz: &e${havuz}'
+  bahis-kaybettin: '&cBahsi kaybettiniz (${miktar}).'
+  bahis-kazandin: '&a&lBahsi kazandınız! &a+${kazanc} &7(oynadığınız ${miktar})'
+  bahis-kendi: '&cKendi maçınıza bahis oynayamazsınız.'
+  bahis-max: '&cBir maçta en fazla ${max} oynayabilirsiniz (şu an ${mevcut}).'
+  bahis-min: '&cEn az bahis ${min}.'
+  bahis-para-yok: '&cBanka hesabınızda ${miktar} yok.'
+  bahis-seyirci-degil: '&cBahis oynamak için önce tribüne geçip izleyici olmalısınız: &f/arena izle'
+  bahis-sonuc: '&6Bahis havuzu ${havuz} dağıtıldı: &f{n} kazanan &7(komisyon ${kom})'
+  bahis-tek-taraf: '&cBu maçta zaten diğer tarafa oynadınız; sadece aynı tarafa ekleme yapabilirsiniz.'
+  bekleme-salonu: '&aÜcret alındı (${ucret}). Bekleme salonundasınız; maç {sure} saniye sonra başlıyor. &7Işınlanma komutları kapalı.'
+  dovus-basladi: '&c&l⚔ &f{baslik} &cdövüşü başladı! &7(Kit: {kit}, süre {sure} dk)'
+  dovuscu-yok: '&cBöyle bir dövüşçü bulunamadı.'
+  engel-cevrimdisi: '&cÇevrimdışı.'
+  engel-durusma: '&cDuruşmadayken arenaya katılamazsınız.'
+  engel-hapis: '&cHapisteyken arenaya katılamazsınız.'
+  engel-macta: '&cZaten bir maçtasınız.'
+  engel-mesgul: '&cŞu an başka bir dövüştesiniz (klan savaşı ya da maç).'
+  engel-mod: '&cArenaya katılmak için hayatta kalma modunda olmalısınız.'
+  engel-olu: '&cŞu an arenaya katılamazsınız.'
+  engel-yarali: '&cAğır yaralıyken arenaya katılamazsınız.'
+  etiket-yenilendi: '&a{sayi} dövüşçünün lig etiketi yeniden uygulandı.'
+  gecersiz-sayi: '&cGeçersiz sayı.'
+  iptal: '&eİptal edildi.'
+  iptal-admin: 'yetkili iptal etti'
+  iptal-engel: '{oyuncu} maça çıkamıyor ({sebep})'
+  iptal-kapanis: 'sunucu kapanıyor'
+  iptal-kit: 'kit havuzu boş'
+  iptal-yedek: '{oyuncu} için envanter yedeği alınamadı'
+  isinlanma-yasak: '&cMaç sırasında ışınlanamazsınız!'
+  ist-baslik: '&6--- "{lakap}" &7({isim}) &6---'
+  ist-lig: '&7Lig: {lig} &7| Puan: &f{puan} &7| Sıra: &f#{sira}'
+  ist-mac: '&7Galibiyet: &a{g} &7| Mağlubiyet: &c{mg} &7| Berabere: &e{b} &7| Kazanma: &f%{oran}'
+  ist-seri: '&7Seri: &f{seri} &7| En iyi seri: &f{eniyi} &7| En yüksek puan: &f{enyuksek}'
+  izle-cikti: '&eTribünden ayrıldınız.'
+  izle-dovuscu: '&cKendi maçınızı tribünden izleyemezsiniz.'
+  izle-dugme: '&a&l[▶ TRİBÜNE GİT VE İZLE]'
+  izle-dugme-bilgi: ' &7Bahis sadece tribündeki izleyicilere açık &8(${min}-${max})'
+  izle-dugme-hover: "&7Tribüne ışınlan, maçı izle ve bahis oyna\n&8Dönmek için: /arena cik"
+  izle-engel: '&cŞu an tribüne gidemezsiniz.'
+  izle-mac-yok: '&cŞu an izlenecek bir maç yok.'
+  izle-seyirci-degil: '&cTribünde değilsiniz.'
+  izle-tribun: '&aTribüne hoş geldiniz! &7Dönmek için: &f/arena cik'
+  izle-tribun-yok: '&cTribün ayarlanmamış.'
+  kart: '&6"{lakap}" &7| Lig: {lig} &7| Puan: &f{puan} &7| G/M/B: &a{g}&7/&c{mg}&7/&e{b}'
+  kart-ipucu: '&7Maç sırası: &f/arena sira &7| İstatistik: &f/arena istatistik &7| Sıralama: &f/arena siralama'
+  kayit-tamam: '&a&l"{lakap}" &aartık bir arena dövüşçüsü! &7Lig: {lig}&7. Maç sırasına girmek için: &f/arena sira'
+  kayitli-degil: '&cÖnce Arena Kayıt NPC''sinden dövüşçü olarak kayıt olmalısınız.'
+  kit-bos: '&cÜzerinizde eşya yok. Kiti giyinip tekrar deneyin.'
+  kit-hazir-silinemez: '&c{ad} config.yml''deki hazır bir kit; config''ten (hazir-kitler) silin.'
+  kit-kit-esyasi: '&cÜzerinde başka bir kitin eşyası var; önce temizleyin.'
+  kit-liste: '&6Kit havuzu ({sayi}): &f{liste}'
+  kit-liste-bos: '&7Kit havuzu boş. Eklemek için: &f/arena admin kit ekle <ad>'
+  kit-liste-not: '&7(Hazır kitler config.yml''den, eklenenler kitler.yml''den; aynı ad varsa eklenen geçerli)'
+  kit-silindi: '&e{ad} kiti silindi.'
+  kit-yok: '&cBöyle bir kit yok.'
+  komut-yasak: '&cMaç sırasında bu komutu kullanamazsınız.'
+  kullanim: '&cKullanım: &e{kullanim}'
+  lakap-alinmis: '&cBu lakap başka bir dövüşçüye ait.'
+  lakap-iste: '&6Arenaya hoş geldin! &fDövüşçü lakabını sohbete yaz &7(örn. Karın Deşen Albert, {min}-{max} karakter). &7İptal: &fiptal'
+  lakap-karakter: '&cLakapta sadece harf, rakam, boşluk ve kesme işareti olabilir.'
+  lakap-tekrar: '&7Tekrar yazın ya da ''iptal''.'
+  lakap-uzunluk: '&cLakap {min}-{max} karakter olmalı.'
+  lakap-yasakli: '&cBu lakap uygunsuz bir ifade içeriyor.'
+  lakap-zaman-asimi: '&cSüre doldu. Tekrar kayıt NPC''sine tıklayın.'
+  lig-atladi: '&6&l▲ "{lakap}" &6{lig} &6ligine yükseldi!'
+  lig-dustu: '&c▼ {lig} &cligine düştünüz. &7(Puanınız eşiğin {pay} puan altına indi)'
+  mac-bahis-durum: '&7Bahis: {acik} &7| Havuz: &e${havuz}'
+  mac-berabere: '&e⚔ {baslik}: &fBERABERE &7({sebep}). Giriş ücretleri iade edildi.'
+  mac-durum: '&6Maç: &f{baslik} &7| Durum: &e{durum}'
+  mac-duyuru: '&6&l⚔ ARENA: &f{baslik} &7- {sure} saniye sonra başlıyor! &7İzlemek için tribüne gelin.'
+  mac-eslestir: '&aEşleştirme hemen deneniyor (sırada {sayi} kişi; arena: {arena}, kit: {kit}).'
+  mac-iptal: '&e⚔ Maç iptal edildi: &f{baslik} &7({sebep}). Giriş ücretleri iade edildi.'
+  mac-sonuc: '&6&l⚔ {kazanan} &6kazandı! &7({baslik} - {sebep}) &a+{kazanc} &7/ &c-{kayip} puan'
+  mac-yok: '&7Şu an maç yok. Sırada {sayi} kişi; 2 kişi olunca otomatik eşleşir.'
+  mac-yok-admin: '&7Süren maç yok.'
+  menu-bahis-baslik: '&8Bahis: &6"{lakap}"'
+  menu-izle-baslik: '&8Arena: &6{baslik}'
+  nokta-ayarlandi: '&a{nokta} ayarlandı &7({aciklama})'
+  npc-izle-isim: '&6&lMaçı İzle'
+  npc-izle-kuruldu: '&aMaçı İzle NPC''si kuruldu.'
+  npc-kayit-isim: '&c&lArena Kayıt'
+  npc-kuruldu: '&aArena Kayıt NPC''si kuruldu.'
+  npc-silindi: '&e{sayi} NPC silindi.'
+  onay-buton-hazir: '&a&l[HAZIRIM]'
+  onay-buton-vazgec: '&c&l[VAZGEÇ]'
+  onay-hover-hazir: '&7Maçı kabul et, giriş ücreti bankandan alınır'
+  onay-rakip-yok: '&eRakibiniz maçı onaylamadı. Sırada kalmaya devam ediyorsunuz.'
+  onay-soru: '&6&lMAÇ BULUNDU! &fRakibin: &c"{rakip}" &7({lig}&7, {puan} puan). &fGiriş ücreti: &e${ucret} &7({sure} sn)'
+  onay-vazgecti: '&eMaçtan vazgeçtiniz ve sıradan çıktınız.'
+  onay-verildi: '&aHazırsın! Rakibin bekleniyor...'
+  onay-yok: '&cOnay bekleyen bir maçınız yok.'
+  onay-zaman-asimi: '&cMaçı zamanında onaylamadınız, sıradan çıkarıldınız.'
+  oyuncu-yok: '&cOyuncu çevrimiçi değil (girişte otomatik geri verilir).'
+  sadece-oyuncu: '&cBu komut sadece oyun içinden kullanılabilir.'
+  sebep-iki-taraf: 'iki taraf da düştü'
+  sebep-kazandi: 'rakibini yendi'
+  sebep-sure: 'süre doldu, hasar {h0} - {h1}'
+  sirada-degil: '&cMaç sırasında değilsiniz.'
+  siradan-cikti: '&eMaç sırasından çıktınız.'
+  siradan-dusuruldu: '&7Maç sırasından çıkarıldınız.'
+  siralama-baslik: '&6--- Arena Ligi: İlk 10 ---'
+  siralama-bos: '&7Henüz kayıtlı dövüşçü yok.'
+  siralama-satir: '&e#{sira} &f"{lakap}" &7{lig} &7- &f{puan} puan &8({g}G/{mg}M)'
+  siraya-girdi: '&a"{lakap}" maç sırasına girdi! &7(Lig: {lig}&7, sırada {sayi} kişi) Çıkmak için: /arena ayril'
+  tablo-alt-baslik: '&7İlk 10 Dövüşçü'
+  tablo-baslik: '&6&l⚔ ARENA LİGİ ⚔'
+  tablo-guncellendi: '&aSıralama tablosu güncellendi. &7(Kurmak: /arena admin kur tablo, kaldırmak: /arena admin tablo sil)'
+  tablo-kuruldu: '&aSıralama tablosu kuruldu. &7Kaldırmak için: &f/arena admin tablo sil'
+  tablo-satir: '&e#{sira} &f{lakap} &8- {lig} &8- &f{puan}'
+  tablo-silindi: '&eSıralama tablosu kaldırıldı.'
+  terk-dondu: '&aMaça geri döndünüz!'
+  terk-uyari: '&e"{lakap}" oyundan çıktı! &7{sure} saniye içinde dönmezse yenilmiş sayılacak.'
+  terk-yenik: '&c"{lakap}" maçı terk etti ve yenilmiş sayıldı.'
+  test-bitti: '&aTest bitti: eşyaların geri verildi.'
+  test-kit: '&aTest: eşyaların yedeklendi, &f{kit} &akiti verildi. Bitirmek için: &f/arena admin test bitir'
+  test-kit-olmadi: '&cKit verilemedi (bekleyen yedek var ya da yedek diske yazılamadı). Konsola bakın.'
+  test-yedek-yok: '&eBekleyen yedeğiniz yok.'
+  title-dovus: '&c&lDÖVÜŞ!'
+  title-giris-alt: '&fARENAYA GİRİYOR &7({lig}&7)'
+  title-giris-ust: '&6&l"{lakap}"'
+  title-kaybettin: '&c&lKAYBETTİN'
+  title-kaybettin-alt: '&7-{puan} puan'
+  title-kazandin: '&a&lKAZANDIN!'
+  title-kazandin-alt: '&7+{puan} puan, +${odul}'
+  title-lig-atladi: '&6&l▲ LİG ATLADIN!'
+  ucret-yetersiz: '&cBanka hesabınızda giriş ücreti (${ucret}) yok. Sıradan çıkarıldınız.'
+  yardim-baslik: '&6--- Arena Ligi ---'
+  yardim-kayit: '&7Kayıt için Arena Kayıt NPC''sine sağ tıklayın.'
+  yardim-satir: '&e{komut} &7- {aciklama}'
+  yedek-geri-verildi: '&aYarıda kalan maçtan önceki eşyalarınız geri verildi.'
+  yedek-liste: '&6Bekleyen yedekler ({sayi}): &f{liste}'
+  yedek-liste-bos: '&7Bekleyen envanter yedeği yok.'
+  yedek-verildi: '&a{oyuncu} oyuncusunun yedeği geri verildi.'
+  yenilendi: '&aAyarlar yeniden yüklendi.'
+  yetki-yok: '&cBu işlem için yetkiniz yok.'
+  zaten-sirada: '&eZaten maç sırasındasınız. &7(Sırada {sayi} kişi) Çıkmak için: /arena ayril'
+
+# Zindan (yer altı, katman katman) - Faz 5, Entry #10. Prosedürel üretilir (admin elle inşa etmez),
+# /arena admin zindan uret ile anlık de üretilebilir. bkz. me.arenaligi.zindan.ZindanYoneticisi.
+zindan:
+  dunya: world
+  min-aktif-zindan-sayisi: 2        # Temizlenmemiş zindan sayısı bunun altına düşerse otomatik yeni üretilir
+  otomatik-kontrol-dakika: 30       # Bu sıklıkla aktif zindan sayısı kontrol edilir
+  min-spawn-uzakligi: 1200          # Dünya spawn'ından minimum uzaklık (blok)
+  max-spawn-uzakligi: 6000          # Dünya spawn'ından maksimum uzaklık (blok)
+  zindanlar-arasi-min-uzaklik: 400  # İki zindan birbirinden en az bu kadar uzak olur
+  yakinlik-esigi: 2800              # Bir oyuncunun en yakın zindana uzaklığı bunu aşarsa (keşifte "boş bölge") yeni zindan üretilir
+  yakinlik-spawn-uzakligi: 1000     # Yukarıdaki durumda yeni zindan, oyuncunun bu kadar (rastgele yönde) ötesine üretilir
+  min-kat: 4                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı) - zorluk göstergesi olarak da kullanılır (bkz. boss-odul-min/max). Kullanıcı isteği (Ekim 2026): "belki 6-7 katı kadar ulaşabilirsin" - aralık büyütüldü.
+  max-kat: 7
+  kat-yuksekligi: 9                 # Bir kattan bir sonrakine Y farkı (blok) - büyütüldü (kullanıcı isteği)
+  can-temel: 70                     # 1. kat canlılarının temel canı; her kat can-tier-carpani ile çarpılır - zorlaştırıldı (kullanıcı isteği)
+  can-tier-carpani: 1.45
+  hasar-temel: 7
+  hasar-tier-carpani: 1.3
+  loot-xp-carpani-taban: 1.0        # Düşen item/XP çarpanı = taban + kat * loot-xp-carpani-tier
+  loot-xp-carpani-tier: 0.3
+  # Kullanıcı isteği (Ekim 2026): boss ödülü artık ÇOK daha düşük bir tavana çekildi - bir boss'u kesmenin
+  # bedeli en fazla ~5-6 bin (zor/çok katlı zindan), en az ~1800 (kolay/az katlı zindan) civarında olsun.
+  boss-odul-min: 1800
+  boss-odul-max: 6000
+  # Boss düştükten sonra zindan bu kadar Minecraft günü (1 Minecraft günü = 20 dakika gerçek zaman)
+  # içinde otomatik silinir (kayıt + fiziksel yapı) - bkz. ZindanYoneticisi#zindaniFizikselSil.
+  silinme-gun-min: 2.0
+  silinme-gun-max: 3.0
+  # Dalga savunması (kullanıcı isteği, Ekim 2026: "bir sonraki katı yaşayabilmek için dalga dalga gelen
+  # yaratıkları öldürebilmemiz gereksin"). Her kat (boss katı hariç) varsayılan kilitlidir; bir oyuncu
+  # tetikleme-yarıçapı içine girince dalgalar başlar - bkz. ZindanYoneticisi#dalgaBekcisi.
+  dalga-sayisi-min: 2               # Bir katın dalga sayısı = min(dalga-sayisi-max, dalga-sayisi-min + tier/2)
+  dalga-sayisi-max: 4
+  dalga-mob-taban: 3                # Bir dalgadaki mob sayısı = taban + round(tier * carpan) + (dalga-no - 1)
+  dalga-mob-tier-carpani: 0.6
+  dalga-tetikleme-yaricapi: 9       # Bir oyuncu kilitli kattaki bu yarıçapa girince dalgalar tetiklenir (blok)
