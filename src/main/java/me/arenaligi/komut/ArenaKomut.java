@@ -269,7 +269,11 @@ public class ArenaKomut implements TabExecutor {
             else if (args.length == 3 && args[1].equalsIgnoreCase("npc")) o.add("sil");
             else if (args.length == 4 && args[1].equalsIgnoreCase("kur") && args[2].equalsIgnoreCase("npc")) o.addAll(List.of("kayit", "izle"));
             else if (args.length == 3 && (args[1].equalsIgnoreCase("puan") || args[1].equalsIgnoreCase("lakap"))) plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
-            else if (args.length == 3 && args[1].equalsIgnoreCase("zindan")) o.addAll(List.of("uret", "sil", "liste", "bilgi"));
+            else if (args.length == 3 && args[1].equalsIgnoreCase("zindan")) o.addAll(List.of("uret", "sil", "liste", "bilgi", "git"));
+            else if (args.length == 4 && args[1].equalsIgnoreCase("zindan")
+                    && (args[2].equalsIgnoreCase("sil") || args[2].equalsIgnoreCase("bilgi") || args[2].equalsIgnoreCase("git"))) {
+                o.addAll(plugin.zindan().isimler());
+            }
             else if (args.length == 3 && args[1].equalsIgnoreCase("hazine")) o.add("baslat");
         }
         String yazilan = args[args.length - 1].toLowerCase(Locale.ROOT);

@@ -590,6 +590,13 @@ public class ZindanYoneticisi implements Listener {
     }
 
     // ------------------------------------------------------------------ KOMUT
+    /** Tab-complete için zindan isimleri (bkz. ArenaKomut#onTabComplete). */
+    public List<String> isimler() {
+        List<String> liste = new java.util.ArrayList<>();
+        for (Zindan z : zindanlar.values()) liste.add(z.isim);
+        return liste;
+    }
+
     public void komut(CommandSender s, String[] args) {
         if (args.length < 3) { kullanim(s); return; }
         switch (args[2].toLowerCase(Locale.ROOT)) {
@@ -597,12 +604,29 @@ public class ZindanYoneticisi implements Listener {
             case "sil" -> silKomut(s, args);
             case "liste" -> listeKomut(s);
             case "bilgi" -> bilgiKomut(s, args);
+            case "git" -> gitKomut(s, args);
             default -> kullanim(s);
         }
     }
 
     private void kullanim(CommandSender s) {
-        s.sendMessage(Mesaj.renk("&cKullanım: &e/arena admin zindan <uret|sil <isim>|liste|bilgi <isim>>"));
+        s.sendMessage(Mesaj.renk("&cKullanım: &e/arena admin zindan <uret|sil <isim>|liste|bilgi <isim>|git <isim>>"));
+    }
+
+    /** /arena admin zindan git <isim>: admin, zindanın giriş noktasına ışınlanır - liste()'deki
+     *  tıklanabilir koordinat butonu da bunu çağırır (Vahşi Kale'deki /vahsikale git ile aynı desen). */
+    private void gitKomut(CommandSender s, String[] args) {
+        if (!(s instanceof Player p)) { s.sendMessage(Mesaj.renk("&cBu komut sadece oyun içinden kullanılabilir.")); return; }
+        if (args.length < 4) { s.sendMessage(Mesaj.renk("&cKullanım: &e/arena admin zindan git <isim>")); return; }
+        String aranan = String.join(" ", java.util.Arrays.asList(args).subList(3, args.length));
+        Zindan hedefZindan = null;
+        for (Zindan z : zindanlar.values()) if (z.isim.equalsIgnoreCase(aranan)) { hedefZindan = z; break; }
+        if (hedefZindan == null || hedefZindan.merkez == null || hedefZindan.merkez.getWorld() == null) {
+            p.sendMessage(Mesaj.renk("&cBöyle bir zindan yok ya da geçerli bir konumu yok."));
+            return;
+        }
+        p.teleport(hedefZindan.merkez);
+        p.sendMessage(Mesaj.renk("&a" + hedefZindan.isim + " zindanına ışınlandın."));
     }
 
     private void uretKomut(CommandSender s) {
@@ -630,9 +654,30 @@ public class ZindanYoneticisi implements Listener {
         if (zindanlar.isEmpty()) { s.sendMessage(Mesaj.renk("&7Hiç zindan yok. &e/arena admin zindan uret")); return; }
         s.sendMessage(Mesaj.renk("&6&l--- ZİNDANLAR ---"));
         for (Zindan z : zindanlar.values()) {
-            s.sendMessage(Mesaj.renk("&e" + z.isim + " &7(" + z.katSayisi + " kat, boss: " + bossGorunenAd(z.bossVaryanti) + ") - "
-                    + (z.temizlendi ? "&cTemizlendi" : "&aAktif")));
+            String durum = z.temizlendi ? "&cTemizlendi" : "&aAktif";
+            net.kyori.adventure.text.Component satir = net.kyori.adventure.text.Component.text()
+                    .append(net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                            .deserialize(Mesaj.renk("&e" + z.isim + " &7(" + z.katSayisi + " kat, boss: " + bossGorunenAd(z.bossVaryanti) + ") - " + durum + " &7| ")))
+                    .append(koordinatButonu(z))
+                    .build();
+            s.sendMessage(satir);
         }
+    }
+
+    /** listeKomut()'ta her zindan için gösterilen, tıklanınca o zindana ışınlayan koordinat bileşeni
+     *  (/arena admin zindan git <isim> komutunu tetikler) - Vahşi Kale'deki koordinatButonu() ile aynı desen. */
+    private net.kyori.adventure.text.Component koordinatButonu(Zindan z) {
+        if (z.merkez == null || z.merkez.getWorld() == null) {
+            return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                    .deserialize(Mesaj.renk("&8[konum yok]"));
+        }
+        String koordMetni = z.merkez.getWorld().getName() + " " + z.merkez.getBlockX() + ", " + z.merkez.getBlockY() + ", " + z.merkez.getBlockZ();
+        net.kyori.adventure.text.Component ipucu = net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                .deserialize(Mesaj.renk("&7Işınlanmak için tıkla: &e/arena admin zindan git " + z.isim));
+        return net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer.legacySection()
+                .deserialize(Mesaj.renk("&b&n[" + koordMetni + "]"))
+                .clickEvent(net.kyori.adventure.text.event.ClickEvent.runCommand("/arena admin zindan git " + z.isim))
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(ipucu));
     }
 
     private void bilgiKomut(CommandSender s, String[] args) {
