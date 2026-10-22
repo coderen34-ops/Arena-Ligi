@@ -100,15 +100,24 @@ public class ZindanYoneticisi implements Listener {
     private double yakinlikSpawnUzakligi() { return plugin.getConfig().getDouble("zindan.yakinlik-spawn-uzakligi", 1000); }
     private int minKat() { return plugin.getConfig().getInt("zindan.min-kat", 3); }
     private int maxKat() { return plugin.getConfig().getInt("zindan.max-kat", 5); }
-    private int katYuksekligiAyari() { return plugin.getConfig().getInt("zindan.kat-yuksekligi", 7); }
-    private double canTemel() { return plugin.getConfig().getDouble("zindan.can-temel", 55); }
-    private double canTierCarpani() { return plugin.getConfig().getDouble("zindan.can-tier-carpani", 1.3); }
-    private double hasarTemel() { return plugin.getConfig().getDouble("zindan.hasar-temel", 5); }
-    private double hasarTierCarpani() { return plugin.getConfig().getDouble("zindan.hasar-tier-carpani", 1.18); }
+    private int katYuksekligiAyari() { return plugin.getConfig().getInt("zindan.kat-yuksekligi", 9); }
+    private double canTemel() { return plugin.getConfig().getDouble("zindan.can-temel", 70); }
+    private double canTierCarpani() { return plugin.getConfig().getDouble("zindan.can-tier-carpani", 1.45); }
+    private double hasarTemel() { return plugin.getConfig().getDouble("zindan.hasar-temel", 7); }
+    private double hasarTierCarpani() { return plugin.getConfig().getDouble("zindan.hasar-tier-carpani", 1.3); }
     private double lootXpTaban() { return plugin.getConfig().getDouble("zindan.loot-xp-carpani-taban", 1.0); }
     private double lootXpTier() { return plugin.getConfig().getDouble("zindan.loot-xp-carpani-tier", 0.3); }
-    private double bossOduluMinTaban() { return plugin.getConfig().getDouble("zindan.boss-odul-min-taban", 6000); }
-    private double bossOduluMaxTaban() { return plugin.getConfig().getDouble("zindan.boss-odul-max-taban", 15000); }
+    // Kullanıcı isteği (Ekim 2026): boss ödülü artık ÇOK daha düşük bir tavana çekildi - "bir boss'u
+    // kesmenin bedeli 5-6 bin dolar falan olsun max, zor boss'tan kolay boss'a göre değişsin". Zindanın
+    // kat sayısı (min-kat..max-kat) zorluk göstergesi olarak kullanılır: en kolay (min-kat) boss-odul-min,
+    // en zor (max-kat) boss-odul-max civarında ödül verir (bkz. bossOlumIsle).
+    private double bossOduluMin() { return plugin.getConfig().getDouble("zindan.boss-odul-min", 1800); }
+    private double bossOduluMax() { return plugin.getConfig().getDouble("zindan.boss-odul-max", 6000); }
+    // Boss öldükten sonra zindan 2-3 Minecraft günü (1 Minecraft günü = 20 dakika gerçek zaman) içinde
+    // otomatik silinir (bkz. zindanBekcisi - silinmeZamani kontrolü).
+    private double silinmeGunMin() { return plugin.getConfig().getDouble("zindan.silinme-gun-min", 2.0); }
+    private double silinmeGunMax() { return plugin.getConfig().getDouble("zindan.silinme-gun-max", 3.0); }
+    private static final long MINECRAFT_GUNU_MS = 1_200_000L; // 20 dakika
     private World dunya() {
         World w = Bukkit.getWorld(plugin.getConfig().getString("zindan.dunya", "world"));
         return w != null ? w : Bukkit.getWorlds().get(0);
@@ -163,13 +172,13 @@ public class ZindanYoneticisi implements Listener {
         for (int kat = 0; kat < yapi.katlar.size(); kat++) {
             ZindanInsaatYardimcisi.KatSonuc ks = yapi.katlar.get(kat);
             z.katMerkezleri.put(kat, ks.merkez.clone());
-            int yariCap = (z.bossKati(kat) ? 10 : 6) + Math.min(3, kat / 2); // ZindanInsaatYardimcisi#insaKat'taki formülle aynı
+            int yariCap = (z.bossKati(kat) ? 15 : 10) + Math.min(5, kat); // ZindanInsaatYardimcisi#insaKat'taki formülle aynı
             z.katYariCaplari.put(kat, yariCap);
             if (z.bossKati(kat)) {
                 bossDogur(z, kat, ks, rng);
                 z.bossOduluSandigi = ks.oduluSandigi == null ? null : ks.oduluSandigi.clone();
             } else {
-                if (ks.sandikNoktasi != null) sandikDoldur(ks.sandikNoktasi, kat + 1, rng);
+                for (Location sandikNoktasi : ks.sandikNoktalari) sandikDoldur(sandikNoktasi, kat + 1, rng);
                 katTopla(z, kat, ks.mobNoktalari, ks.eliteNoktasi, rng);
             }
         }
@@ -253,9 +262,10 @@ public class ZindanYoneticisi implements Listener {
     }
 
     private Varyant rastgeleVaryant(Random rng) {
+        // Kullanıcı isteği: "moblar zor olsun" - NORMAL oranı düşürüldü, HIZLI/GUCLU daha sık.
         double zar = rng.nextDouble();
-        if (zar < 0.5) return Varyant.NORMAL;
-        return zar < 0.75 ? Varyant.HIZLI : Varyant.GUCLU;
+        if (zar < 0.35) return Varyant.NORMAL;
+        return zar < 0.65 ? Varyant.HIZLI : Varyant.GUCLU;
     }
 
     /**
@@ -412,6 +422,9 @@ public class ZindanYoneticisi implements Listener {
     private void bossOlumIsle(Zindan z) {
         if (z.temizlendi) return;
         z.temizlendi = true;
+        // Kullanıcı isteği: boss düşünce zindan 2-3 Minecraft günü içinde otomatik silinsin (bkz. zindanBekcisi).
+        double gun = silinmeGunMin() + Math.random() * (silinmeGunMax() - silinmeGunMin());
+        z.silinmeZamani = System.currentTimeMillis() + Math.round(gun * MINECRAFT_GUNU_MS);
         kaydet();
         Bukkit.broadcastMessage(Mesaj.renk("&4&l" + z.isim + " ZİNDANI TEMİZLENDİ! &7(" + bossGorunenAd(z.bossVaryanti) + " düştü)"));
 
@@ -419,8 +432,11 @@ public class ZindanYoneticisi implements Listener {
 
         double toplamHasar = z.bossHasarKatkisi.values().stream().mapToDouble(Double::doubleValue).sum();
         if (toplamHasar <= 0) return;
-        double oduluTaban = bossOduluMinTaban() + Math.random() * (bossOduluMaxTaban() - bossOduluMinTaban());
-        double toplamOdul = oduluTaban * z.katSayisi;
+        // Zorluk göstergesi = kat sayısı (min-kat..max-kat arası) - kolay zindan boss-odul-min civarı,
+        // zor (en çok kat) zindan boss-odul-max civarı ödül verir. Toplamda tüm oyuncular arası paylaşılır.
+        double oran = Math.max(0, Math.min(1, (z.katSayisi - minKat()) / (double) Math.max(1, maxKat() - minKat())));
+        double odulTabani = bossOduluMin() + oran * (bossOduluMax() - bossOduluMin());
+        double toplamOdul = odulTabani * (0.9 + Math.random() * 0.2); // ±%10 rastgelelik
         for (Map.Entry<UUID, Double> e : z.bossHasarKatkisi.entrySet()) {
             double pay = Math.round(toplamOdul * (e.getValue() / toplamHasar) * 100.0) / 100.0;
             if (pay <= 0) continue;
@@ -446,6 +462,21 @@ public class ZindanYoneticisi implements Listener {
      */
     private void zindanBekcisi() {
         Random rng = new Random();
+        Iterator<Zindan> disIterator = zindanlar.values().iterator();
+        List<Zindan> silinecekler = new java.util.ArrayList<>();
+        while (disIterator.hasNext()) {
+            Zindan z = disIterator.next();
+            // Kullanıcı isteği: boss'u kesilmiş zindan, kesilmesinden 2-3 Minecraft günü sonra otomatik
+            // silinir (kayıt + fiziksel yapı) - bkz. bossOlumIsle (silinmeZamani hesaplanır) ve
+            // zindaniFizikselSil (gerçek blok temizliği).
+            if (z.temizlendi && z.silinmeZamani > 0 && System.currentTimeMillis() >= z.silinmeZamani) {
+                silinecekler.add(z);
+            }
+        }
+        for (Zindan z : silinecekler) {
+            zindaniFizikselSil(z);
+        }
+
         for (Zindan z : zindanlar.values()) {
             if (z.temizlendi || z.merkez == null || z.merkez.getWorld() == null) continue;
             for (int kat = 0; kat < z.katSayisi - 1; kat++) {
@@ -459,7 +490,8 @@ public class ZindanYoneticisi implements Listener {
                 canlilar.removeIf(uuid -> Bukkit.getEntity(uuid) == null);
 
                 int tier = kat + 1;
-                int eksik = (2 + tier) - canlilar.size();
+                int hedefSayi = 3 + (int) Math.round(tier * 1.4); // ZindanInsaatYardimcisi#insaKat'taki mobSayisi formülüyle aynı
+                int eksik = hedefSayi - canlilar.size();
                 for (int i = 0; i < eksik; i++) {
                     double aci = rng.nextDouble() * Math.PI * 2;
                     double uzaklik = 1 + rng.nextDouble() * Math.max(1, yariCap - 2);
@@ -479,6 +511,65 @@ public class ZindanYoneticisi implements Listener {
                 }
             }
         }
+    }
+
+    /**
+     * Kullanıcı isteği: boss düşmüş (temizlenmiş) bir zindan 2-3 Minecraft günü sonra ortadan kalksın.
+     * Kalan canlıları siler, her katın oda+odacık+merdiven alanını katı taşla (COBBLED_DEEPSLATE) geri
+     * doldurarak fiziksel yapıyı da kapatır (tam orijinal doku değil ama boşluk/oyuk kalmaz - "silinsin"
+     * isteğiyle tutarlı), kaydı zindanlar.yml'den düşürür. min-aktif-zindan-sayisi altına düşünce
+     * otomatikKontrolEt() zaten yeni bir zindan üretecektir.
+     */
+    private void zindaniFizikselSil(Zindan z) {
+        for (Set<UUID> set : z.katCanlilari.values()) {
+            for (UUID id : set) { Entity e = Bukkit.getEntity(id); if (e != null) e.remove(); }
+        }
+        if (z.bossUuid != null) { Entity e = Bukkit.getEntity(z.bossUuid); if (e != null) e.remove(); }
+
+        for (Map.Entry<Integer, Location> e : z.katMerkezleri.entrySet()) {
+            Location merkez = e.getValue();
+            Integer yariCap = z.katYariCaplari.get(e.getKey());
+            if (merkez == null || merkez.getWorld() == null || yariCap == null) continue;
+            World w = merkez.getWorld();
+            int cx = merkez.getBlockX();
+            int cz = merkez.getBlockZ();
+            int tabanY = merkez.getBlockY() - 1; // ks.merkez = tabanY+1 (bkz. ZindanInsaatYardimcisi#insaKat)
+            int genislik = yariCap + 5; // ana oda + odacıkların (yariCap+3+2) tamamını kapsar
+            int minX = cx - genislik, maxX = cx + genislik;
+            int minZ = cz - genislik, maxZ = cz + genislik;
+            int minY = tabanY - 1, maxY = tabanY + z.katYuksekligi;
+            if (!w.isChunkLoaded(cx >> 4, cz >> 4)) continue; // chunk yüklü değilse dokunma, bir dahaki bekçi turunda tekrar denenir
+            for (int x = minX; x <= maxX; x++) {
+                for (int y = minY; y <= maxY; y++) {
+                    for (int z2 = minZ; z2 <= maxZ; z2++) {
+                        w.getBlockAt(x, y, z2).setType(Material.COBBLED_DEEPSLATE);
+                    }
+                }
+            }
+        }
+        // Yüzeyden ilk kata inen giriş şaftını da kapat (z.merkez = girişNoktası, yüzey+1 yükseklikte).
+        if (z.merkez != null && z.merkez.getWorld() != null && !z.katMerkezleri.isEmpty()) {
+            World w = z.merkez.getWorld();
+            int gx = z.merkez.getBlockX(), gz = z.merkez.getBlockZ();
+            Location ustKat = z.katMerkezleri.get(0);
+            if (ustKat != null && w.isChunkLoaded(gx >> 4, gz >> 4)) {
+                int ustY = ustKat.getBlockY() - 1 + z.katYuksekligi; // ilk katın tavanı
+                int altY = ustY;
+                int ustSinir = z.merkez.getBlockY() + 1;
+                for (int x = gx - 2; x <= gx + 2; x++) {
+                    for (int y = Math.min(altY, ustSinir); y <= Math.max(altY, ustSinir); y++) {
+                        for (int z2 = gz - 2; z2 <= gz + 2; z2++) {
+                            w.getBlockAt(x, y, z2).setType(Material.COBBLED_DEEPSLATE);
+                        }
+                    }
+                }
+            }
+        }
+
+        zindanlar.remove(z.id);
+        kaydet();
+        plugin.getLogger().info("[Zindan] " + z.isim + " (boss düşeli " + silinmeGunMin() + "-" + silinmeGunMax()
+                + " Minecraft günü geçti) otomatik silindi.");
     }
 
     /** Restart sonrası (ya da başka bir sebeple boş görünen) bir katta gerçekten hâlâ yaşayan, bize ait
@@ -704,6 +795,7 @@ public class ZindanYoneticisi implements Listener {
             y.set(yol + ".boss-varyanti", z.bossVaryanti);
             y.set(yol + ".temizlendi", z.temizlendi);
             y.set(yol + ".olusturulma-zamani", z.olusturulmaZamani);
+            y.set(yol + ".silinme-zamani", z.silinmeZamani);
             y.set(yol + ".boss-uuid", z.bossUuid == null ? null : z.bossUuid.toString());
             y.set(yol + ".boss-odulu-sandigi", Konum.yaz(z.bossOduluSandigi));
             for (Map.Entry<Integer, Location> e : z.katMerkezleri.entrySet()) {
@@ -732,10 +824,11 @@ public class ZindanYoneticisi implements Listener {
             z.isim = c.getString("isim", "Zindan");
             z.merkez = Konum.oku(c.getString("merkez"));
             z.katSayisi = c.getInt("kat-sayisi", 3);
-            z.katYuksekligi = c.getInt("kat-yuksekligi", 7);
+            z.katYuksekligi = c.getInt("kat-yuksekligi", 9);
             z.bossVaryanti = c.getString("boss-varyanti", "TAS_YURUYEN");
             z.temizlendi = c.getBoolean("temizlendi", false);
             z.olusturulmaZamani = c.getLong("olusturulma-zamani", System.currentTimeMillis());
+            z.silinmeZamani = c.getLong("silinme-zamani", 0L);
             String bossUuidStr = c.getString("boss-uuid");
             z.bossUuid = bossUuidStr == null ? null : UUID.fromString(bossUuidStr);
             z.bossOduluSandigi = Konum.oku(c.getString("boss-odulu-sandigi"));

@@ -34,6 +34,9 @@ public class Zindan {
     public UUID bossUuid;
     public Location bossOduluSandigi; // boss katındaki sandık - fiziksel blok generation'da konur, İÇİ sadece boss öldükten sonra doldurulur
     public long olusturulmaZamani;
+    // boss öldüğünde bir kere hesaplanır (bkz. ZindanYoneticisi#bossOlumIsle): "now + rastgele 2-3 Minecraft günü
+    // karşılığı ms". Bekçi tick'i bu zamana ulaşınca zindanı fiziksel olarak siler (bkz. zindanBekcisi).
+    public long silinmeZamani;
 
     // Runtime-only (persist edilmez): her kattaki canlıların UUID'leri (bekçi tick'i bunları kontrol eder,
     // eksikse tamamlar) ve boss'a verilen hasarın oyuncu bazında katkısı (ödül paylaşımı için).

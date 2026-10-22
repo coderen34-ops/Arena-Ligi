@@ -269,14 +269,20 @@ zindan:
   zindanlar-arasi-min-uzaklik: 400  # İki zindan birbirinden en az bu kadar uzak olur
   yakinlik-esigi: 2800              # Bir oyuncunun en yakın zindana uzaklığı bunu aşarsa (keşifte "boş bölge") yeni zindan üretilir
   yakinlik-spawn-uzakligi: 1000     # Yukarıdaki durumda yeni zindan, oyuncunun bu kadar (rastgele yönde) ötesine üretilir
-  min-kat: 3                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı)
+  min-kat: 3                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı) - zorluk göstergesi olarak da kullanılır (bkz. boss-odul-min/max)
   max-kat: 5
-  kat-yuksekligi: 7                 # Bir kattan bir sonrakine Y farkı (blok)
-  can-temel: 55                     # 1. kat canlılarının temel canı; her kat can-tier-carpani ile çarpılır
-  can-tier-carpani: 1.3
-  hasar-temel: 5
-  hasar-tier-carpani: 1.18
+  kat-yuksekligi: 9                 # Bir kattan bir sonrakine Y farkı (blok) - büyütüldü (kullanıcı isteği)
+  can-temel: 70                     # 1. kat canlılarının temel canı; her kat can-tier-carpani ile çarpılır - zorlaştırıldı (kullanıcı isteği)
+  can-tier-carpani: 1.45
+  hasar-temel: 7
+  hasar-tier-carpani: 1.3
   loot-xp-carpani-taban: 1.0        # Düşen item/XP çarpanı = taban + kat * loot-xp-carpani-tier
   loot-xp-carpani-tier: 0.3
-  boss-odul-min-taban: 6000         # Boss ödülü = (bu ile max arası rastgele) * zindanın kat sayısı, hasar katkısına göre paylaşılır
-  boss-odul-max-taban: 15000
+  # Kullanıcı isteği (Ekim 2026): boss ödülü artık ÇOK daha düşük bir tavana çekildi - bir boss'u kesmenin
+  # bedeli en fazla ~5-6 bin (zor/çok katlı zindan), en az ~1800 (kolay/az katlı zindan) civarında olsun.
+  boss-odul-min: 1800
+  boss-odul-max: 6000
+  # Boss düştükten sonra zindan bu kadar Minecraft günü (1 Minecraft günü = 20 dakika gerçek zaman)
+  # içinde otomatik silinir (kayıt + fiziksel yapı) - bkz. ZindanYoneticisi#zindaniFizikselSil.
+  silinme-gun-min: 2.0
+  silinme-gun-max: 3.0
