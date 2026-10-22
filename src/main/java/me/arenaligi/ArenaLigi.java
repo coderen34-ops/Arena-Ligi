@@ -38,6 +38,7 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.lig.LigEtiketi etiket;
     private me.arenaligi.lig.SiralamaTablosu tablo;
     private EtkinlikYonetici etkinlik;
+    private me.arenaligi.zindan.ZindanYoneticisi zindan;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
     private ExecutorService yazici;
@@ -77,9 +78,11 @@ public class ArenaLigi extends JavaPlugin {
         mac = new me.arenaligi.mac.MacYonetici(this);
         tablo = new me.arenaligi.lig.SiralamaTablosu(this);
         etkinlik = new EtkinlikYonetici(this);
+        zindan = new me.arenaligi.zindan.ZindanYoneticisi(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
         getServer().getPluginManager().registerEvents(etkinlik, this);
+        getServer().getPluginManager().registerEvents(zindan, this);
         getServer().getPluginManager().registerEvents(kayitNpc, this);
         getServer().getPluginManager().registerEvents(arena, this);
         getServer().getPluginManager().registerEvents(yedek, this);
@@ -93,6 +96,12 @@ public class ArenaLigi extends JavaPlugin {
             pc.setExecutor(komut);
             pc.setTabCompleter(komut);
         }
+
+        // Açılışta asgari zindan sayısı eksikse üretir; sonra periyodik olarak (temizlenenlerin yerine) kontrol eder
+        zindan.otomatikIlkDoldurma();
+        long zindanKontrol = Math.max(1200L, getConfig().getInt("zindan.otomatik-kontrol-dakika", 30) * 1200L);
+        Bukkit.getScheduler().runTaskTimer(this, zindan::otomatikKontrolEt, zindanKontrol, zindanKontrol);
+
         getLogger().info(dovusculer.hepsi().size() + " dövüşçü yüklendi.");
     }
 
@@ -115,6 +124,7 @@ public class ArenaLigi extends JavaPlugin {
         if (arena != null) arena.hemenKaydet();
         if (kitler != null) kitler.hemenKaydet();
         if (etkinlik != null) etkinlik.hemenKaydet();
+        if (zindan != null) zindan.hemenKaydet();
     }
 
     /** İşi kayıt thread'inde çalıştırır; kapanışta ya da thread yoksa hemen çalıştırır. */
@@ -148,4 +158,5 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.lig.LigEtiketi etiket() { return etiket; }
     public me.arenaligi.lig.SiralamaTablosu tablo() { return tablo; }
     public EtkinlikYonetici etkinlik() { return etkinlik; }
+    public me.arenaligi.zindan.ZindanYoneticisi zindan() { return zindan; }
 }

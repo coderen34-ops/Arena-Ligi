@@ -257,3 +257,26 @@ mesajlar:
   yenilendi: '&aAyarlar yeniden yüklendi.'
   yetki-yok: '&cBu işlem için yetkiniz yok.'
   zaten-sirada: '&eZaten maç sırasındasınız. &7(Sırada {sayi} kişi) Çıkmak için: /arena ayril'
+
+# Zindan (yer altı, katman katman) - Faz 5, Entry #10. Prosedürel üretilir (admin elle inşa etmez),
+# /arena admin zindan uret ile anlık de üretilebilir. bkz. me.arenaligi.zindan.ZindanYoneticisi.
+zindan:
+  dunya: world
+  min-aktif-zindan-sayisi: 2        # Temizlenmemiş zindan sayısı bunun altına düşerse otomatik yeni üretilir
+  otomatik-kontrol-dakika: 30       # Bu sıklıkla aktif zindan sayısı kontrol edilir
+  min-spawn-uzakligi: 1200          # Dünya spawn'ından minimum uzaklık (blok)
+  max-spawn-uzakligi: 6000          # Dünya spawn'ından maksimum uzaklık (blok)
+  zindanlar-arasi-min-uzaklik: 400  # İki zindan birbirinden en az bu kadar uzak olur
+  yakinlik-esigi: 2800              # Bir oyuncunun en yakın zindana uzaklığı bunu aşarsa (keşifte "boş bölge") yeni zindan üretilir
+  yakinlik-spawn-uzakligi: 1000     # Yukarıdaki durumda yeni zindan, oyuncunun bu kadar (rastgele yönde) ötesine üretilir
+  min-kat: 3                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı)
+  max-kat: 5
+  kat-yuksekligi: 7                 # Bir kattan bir sonrakine Y farkı (blok)
+  can-temel: 55                     # 1. kat canlılarının temel canı; her kat can-tier-carpani ile çarpılır
+  can-tier-carpani: 1.3
+  hasar-temel: 5
+  hasar-tier-carpani: 1.18
+  loot-xp-carpani-taban: 1.0        # Düşen item/XP çarpanı = taban + kat * loot-xp-carpani-tier
+  loot-xp-carpani-tier: 0.3
+  boss-odul-min-taban: 6000         # Boss ödülü = (bu ile max arası rastgele) * zindanın kat sayısı, hasar katkısına göre paylaşılır
+  boss-odul-max-taban: 15000

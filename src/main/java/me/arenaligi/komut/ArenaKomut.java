@@ -174,7 +174,7 @@ public class ArenaKomut implements TabExecutor {
                 else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin npc sil");
             }
             case "puan" -> adminPuan(s, args);
-            case "zindan" -> plugin.etkinlik().zindanKomut(s, args);
+            case "zindan" -> plugin.zindan().komut(s, args);
             case "hazine" -> plugin.etkinlik().hazineKomut(s, args);
             case "tablo" -> {
                 if (args.length > 2 && args[2].equalsIgnoreCase("sil")) plugin.tablo().sil(s);
@@ -255,7 +255,7 @@ public class ArenaKomut implements TabExecutor {
         } else if (args.length == 2 && args[0].equalsIgnoreCase("istatistik")) {
             plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
         } else if (args[0].equalsIgnoreCase("admin") && s.hasPermission("arena.admin")) {
-            if (args.length == 2) o.addAll(List.of("kur", "sil", "durum", "kit", "test", "yedek", "mac", "npc", "puan", "lakap", "tablo", "etiketyenile", "yenile"));
+            if (args.length == 2) o.addAll(List.of("kur", "sil", "durum", "kit", "test", "yedek", "mac", "npc", "puan", "lakap", "tablo", "etiketyenile", "yenile", "zindan", "hazine"));
             else if (args.length == 3 && args[1].equalsIgnoreCase("mac")) o.addAll(List.of("baslat", "iptal"));
             else if (args.length == 3 && args[1].equalsIgnoreCase("kur")) { o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet()); o.add("npc"); o.add("tablo"); }
             else if (args.length == 3 && args[1].equalsIgnoreCase("sil")) o.addAll(me.arenaligi.arena.ArenaYonetici.NOKTALAR.keySet());
@@ -269,6 +269,8 @@ public class ArenaKomut implements TabExecutor {
             else if (args.length == 3 && args[1].equalsIgnoreCase("npc")) o.add("sil");
             else if (args.length == 4 && args[1].equalsIgnoreCase("kur") && args[2].equalsIgnoreCase("npc")) o.addAll(List.of("kayit", "izle"));
             else if (args.length == 3 && (args[1].equalsIgnoreCase("puan") || args[1].equalsIgnoreCase("lakap"))) plugin.dovusculer().hepsi().forEach(d -> o.add(d.isim));
+            else if (args.length == 3 && args[1].equalsIgnoreCase("zindan")) o.addAll(List.of("uret", "sil", "liste", "bilgi"));
+            else if (args.length == 3 && args[1].equalsIgnoreCase("hazine")) o.add("baslat");
         }
         String yazilan = args[args.length - 1].toLowerCase(Locale.ROOT);
         o.removeIf(x -> !x.toLowerCase(Locale.ROOT).startsWith(yazilan));
