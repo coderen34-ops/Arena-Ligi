@@ -153,17 +153,22 @@ public final class ZindanInsaatYardimcisi {
             }
         }
 
-        // Zincirli hissi: tavandan sarkan birkaç zincir dekorasyonu.
-        int zincirSayisi = bossKati ? 4 : 2;
-        for (int i = 0; i < zincirSayisi; i++) {
-            int dx = cx - yariCap + 2 + rng.nextInt(Math.max(1, 2 * yariCap - 3));
-            int dz = cz - yariCap + 2 + rng.nextInt(Math.max(1, 2 * yariCap - 3));
-            Block zincirUst = w.getBlockAt(dx, tabanY + ic, dz);
-            if (zincirUst.getType() == Material.AIR) {
-                zincirUst.setType(Material.CHAIN);
-                if (zincirUst.getBlockData() instanceof Orientable or) {
-                    or.setAxis(Axis.Y);
-                    zincirUst.setBlockData(or);
+        // Zincirli hissi: tavandan sarkan birkaç zincir dekorasyonu. Material.CHAIN sabiti bu sunucunun
+        // kullandığı API derlemesinde yok (bkz. derleme hatası) - isme göre runtime'da çözülüyor, yoksa
+        // (null) sessizce atlanıyor (diğer atmosfer öğeleri - damla taşı/örümcek ağı/nem - zaten yeterli).
+        Material zincirMat = Material.matchMaterial("CHAIN");
+        if (zincirMat != null) {
+            int zincirSayisi = bossKati ? 4 : 2;
+            for (int i = 0; i < zincirSayisi; i++) {
+                int dx = cx - yariCap + 2 + rng.nextInt(Math.max(1, 2 * yariCap - 3));
+                int dz = cz - yariCap + 2 + rng.nextInt(Math.max(1, 2 * yariCap - 3));
+                Block zincirUst = w.getBlockAt(dx, tabanY + ic, dz);
+                if (zincirUst.getType() == Material.AIR) {
+                    zincirUst.setType(zincirMat);
+                    if (zincirUst.getBlockData() instanceof Orientable or) {
+                        or.setAxis(Axis.Y);
+                        zincirUst.setBlockData(or);
+                    }
                 }
             }
         }
