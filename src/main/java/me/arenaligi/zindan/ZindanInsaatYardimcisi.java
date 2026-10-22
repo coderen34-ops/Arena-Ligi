@@ -167,7 +167,7 @@ public final class ZindanInsaatYardimcisi {
 
         KatSonuc ks = new KatSonuc();
         ks.tikacMalzemesi = tasTugla;
-        ks.merkez = hucreMerkezi(x0, z0, hucreBoyutu, girisCx, girisCz, tabanY);
+        ks.merkez = hucreMerkezi(w, x0, z0, hucreBoyutu, girisCx, girisCz, tabanY);
 
         // Girişe yakın loş kül meşalesi (atmosfer - "çok aydınlık olmasın" kullanıcı isteği).
         Block girisMesalesi = w.getBlockAt(x0 + 1, tabanY + 2, cz);
@@ -182,13 +182,13 @@ public final class ZindanInsaatYardimcisi {
         List<Location> sandikAdaylari = new ArrayList<>();
         for (int gx = 0; gx < gridBoyutu; gx++) {
             for (int gz = 0; gz < gridBoyutu; gz++) {
-                Location merkezNokta = hucreMerkezi(x0, z0, hucreBoyutu, gx, gz, tabanY);
+                Location merkezNokta = hucreMerkezi(w, x0, z0, hucreBoyutu, gx, gz, tabanY);
                 if (gx == girisCx && gz == girisCz) continue;
                 ks.mobNoktalari.add(merkezNokta);
                 sandikAdaylari.add(merkezNokta);
             }
         }
-        ks.eliteNoktasi = hucreMerkezi(x0, z0, hucreBoyutu, enUzak[0], enUzak[1], tabanY);
+        ks.eliteNoktasi = hucreMerkezi(w, x0, z0, hucreBoyutu, enUzak[0], enUzak[1], tabanY);
 
         java.util.Collections.shuffle(sandikAdaylari, rng);
         for (int i = 0; i < Math.min(2, sandikAdaylari.size()); i++) {
@@ -199,10 +199,10 @@ public final class ZindanInsaatYardimcisi {
         return ks;
     }
 
-    private static Location hucreMerkezi(int x0, int z0, int hucreBoyutu, int gx, int gz, int tabanY) {
+    private static Location hucreMerkezi(World w, int x0, int z0, int hucreBoyutu, int gx, int gz, int tabanY) {
         int merkezX = x0 + gx * hucreBoyutu + hucreBoyutu / 2;
         int merkezZ = z0 + gz * hucreBoyutu + hucreBoyutu / 2;
-        return new Location(null, merkezX + 0.5, tabanY + 1, merkezZ + 0.5);
+        return new Location(w, merkezX + 0.5, tabanY + 1, merkezZ + 0.5);
     }
 
     /** Randomize edilmiş DFS ile bir yayılma ağacı (spanning tree) üretir - Vahşi Kale'deki

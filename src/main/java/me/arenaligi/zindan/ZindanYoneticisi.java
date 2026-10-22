@@ -939,8 +939,11 @@ public class ZindanYoneticisi implements Listener {
 
     private void silKomut(CommandSender s, String[] args) {
         if (args.length < 4) { s.sendMessage(Mesaj.renk("&cKullanım: &e/arena admin zindan sil <isim>")); return; }
+        // Düzeltme: isimler çok kelimeli ("Önek Sonek #NNN") - sadece args[3]'e bakmak (eski kod) hiçbir
+        // zaman eşleşmiyordu; gitKomut'taki gibi args[3..] birleştiriliyor (bkz. o metottaki aynı desen).
+        String aranan = String.join(" ", java.util.Arrays.asList(args).subList(3, args.length));
         Zindan hedef = null;
-        for (Zindan z : zindanlar.values()) if (z.isim.equalsIgnoreCase(args[3])) { hedef = z; break; }
+        for (Zindan z : zindanlar.values()) if (z.isim.equalsIgnoreCase(aranan)) { hedef = z; break; }
         if (hedef == null) { s.sendMessage(Mesaj.renk("&cBöyle bir zindan yok.")); return; }
         for (Set<UUID> set : hedef.katCanlilari.values()) {
             for (UUID id : set) { Entity e = Bukkit.getEntity(id); if (e != null) e.remove(); }
@@ -983,8 +986,10 @@ public class ZindanYoneticisi implements Listener {
 
     private void bilgiKomut(CommandSender s, String[] args) {
         if (args.length < 4) { s.sendMessage(Mesaj.renk("&cKullanım: &e/arena admin zindan bilgi <isim>")); return; }
+        // Düzeltme (bkz. silKomut'taki aynı yorum): çok kelimeli isimler için args[3..] birleştiriliyor.
+        String aranan = String.join(" ", java.util.Arrays.asList(args).subList(3, args.length));
         for (Zindan z : zindanlar.values()) {
-            if (!z.isim.equalsIgnoreCase(args[3]) || z.merkez == null || z.merkez.getWorld() == null) continue;
+            if (!z.isim.equalsIgnoreCase(aranan) || z.merkez == null || z.merkez.getWorld() == null) continue;
             s.sendMessage(Mesaj.renk("&6" + z.isim + " &7- " + z.katSayisi + " kat, boss: " + bossGorunenAd(z.bossVaryanti) + ", "
                     + (z.temizlendi ? "&cTemizlendi" : "&aAktif") + " &7- &f"
                     + z.merkez.getWorld().getName() + " " + z.merkez.getBlockX() + ", " + z.merkez.getBlockY() + ", " + z.merkez.getBlockZ()));
