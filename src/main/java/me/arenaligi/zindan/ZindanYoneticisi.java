@@ -547,24 +547,10 @@ public class ZindanYoneticisi implements Listener {
                 }
             }
         }
-        // Yüzeyden ilk kata inen giriş şaftını da kapat (z.merkez = girişNoktası, yüzey+1 yükseklikte).
-        if (z.merkez != null && z.merkez.getWorld() != null && !z.katMerkezleri.isEmpty()) {
-            World w = z.merkez.getWorld();
-            int gx = z.merkez.getBlockX(), gz = z.merkez.getBlockZ();
-            Location ustKat = z.katMerkezleri.get(0);
-            if (ustKat != null && w.isChunkLoaded(gx >> 4, gz >> 4)) {
-                int ustY = ustKat.getBlockY() - 1 + z.katYuksekligi; // ilk katın tavanı
-                int altY = ustY;
-                int ustSinir = z.merkez.getBlockY() + 1;
-                for (int x = gx - 2; x <= gx + 2; x++) {
-                    for (int y = Math.min(altY, ustSinir); y <= Math.max(altY, ustSinir); y++) {
-                        for (int z2 = gz - 2; z2 <= gz + 2; z2++) {
-                            w.getBlockAt(x, y, z2).setType(Material.COBBLED_DEEPSLATE);
-                        }
-                    }
-                }
-            }
-        }
+        // Not: eskiden burada yüzeye çıkan giriş şaftını da kapatan bir adım vardı - artık zindanlar
+        // yüzeyle hiç bağlantılı inşa edilmiyor (bkz. ZindanInsaatYardimcisi#insaEt, kullanıcı isteği:
+        // "trial chamber'lar gibi izole") - z.merkez artık ilk katın kendi merkezi, yukarıdaki kat
+        // döngüsü (her katın oda+odacıklarını dolduran) onu da zaten kapsıyor, ekstra adıma gerek yok.
 
         zindanlar.remove(z.id);
         kaydet();

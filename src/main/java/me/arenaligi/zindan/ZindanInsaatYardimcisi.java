@@ -71,11 +71,15 @@ public final class ZindanInsaatYardimcisi {
             KatSonuc ks = insaKat(w, merkezX, merkezZ, tabanY, yariCap, katYuksekligi, tier, bossKati, rng);
             sonuc.katlar.add(ks);
 
-            // Merdiven: bu katın merkezinden bir önceki seviyeye kadar 1x1 şaft + ladder (ilk kat için yüzeyden iner)
-            int ustY = kat == 0 ? yuzeyNoktasi.getBlockY() : oncekiKatY;
-            merdivenSaftiKaz(w, merkezX + yariCapKaydirma(kat), merkezZ, ustY, tabanY + 1);
             if (kat == 0) {
-                sonuc.girisNoktasi = new Location(w, merkezX + yariCapKaydirma(0) + 0.5, yuzeyNoktasi.getBlockY() + 1, merkezZ + 0.5);
+                // Kullanıcı isteği (Ekim 2026): "yer yüzü ile bağlantısı olmasın, trial chamber'lar gibi
+                // izole olsunlar" - ilk kat için artık yüzeye çıkan bir merdiven/şaft AÇILMIYOR. Zindan
+                // tamamen gömülü: oyuncular yalnızca kazarak/mağara keşfiyle duvarına rastlayıp bulabilir.
+                // Giriş noktası (teleport/yakınlık hesapları için) artık ilk katın kendi merkezi.
+                sonuc.girisNoktasi = ks.merkez.clone();
+            } else {
+                // Kat-kat inme hissi iç bağlantıda korunuyor: bu kattan bir önceki kata merdivenli şaft.
+                merdivenSaftiKaz(w, merkezX + yariCapKaydirma(kat), merkezZ, oncekiKatY, tabanY + 1);
             }
             oncekiKatY = tabanY; // bir sonraki kat bu kattan aşağı inecek şaft için referans olmasın diye alt sınır kullanılmaz; üstten devam
         }
