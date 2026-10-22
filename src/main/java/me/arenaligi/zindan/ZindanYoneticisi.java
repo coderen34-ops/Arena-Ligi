@@ -33,6 +33,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.Skeleton;
 import org.bukkit.event.EventHandler;
+import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -63,7 +64,40 @@ import me.arenaligi.veri.YamlDosya;
  */
 public class ZindanYoneticisi implements Listener {
 
-    private enum Varyant { NORMAL, HIZLI, GUCLU }
+    // Kullanıcı isteği (Ekim 2026): "bir sürü varyant ekle" - ZIRHLI (ağır/büyük, zırhlı) ve MINI
+    // (küçültülmüş, hafif) eklendi; HIZLI/GUCLU refine edildi (bkz. varyantUygula).
+    private enum Varyant { NORMAL, HIZLI, GUCLU, ZIRHLI, MINI }
+
+    // Bu sunucunun özel Paper API derlemesinde "SCALE" özniteliği (Attribute.CLAUDE sabiti olarak) rock-solid
+    // garanti değil (bkz. Material.CHAIN ile yaşanan aynı sınıf derleme hatası) - isme göre runtime'da,
+    // defensif olarak çözülüyor; bulunamazsa (null) ZIRHLI/MINI varyantları sadece görsel boyut değişikliği
+    // olmadan devam eder (stat/zırh etkisi yine uygulanır).
+    private static final Attribute SCALE_ATTR = cozScaleAttribute();
+
+    /**
+     * TAMAMEN yansıma (reflection) tabanlı çözüm - Material.CHAIN'de yaşanan derleme hatasıyla AYNI
+     * sınıf bir sorunu önceden önlemek için: "SCALE" özniteliğinin bu sunucunun özel Paper API
+     * derlemesinde Attribute.SCALE / Attribute.GENERIC_SCALE sabiti olarak mı, yoksa Registry.ATTRIBUTE
+     * üzerinden mi (ya da hiç) bulunduğu bilinmiyor - hiçbiri derleme zamanında doğrudan referans
+     * edilmiyor, hepsi string isimle yansıma üzerinden deneniyor. Hiçbiri bulunamazsa null döner ve
+     * ZIRHLI/MINI varyantları sadece görsel boyut değişikliği olmadan devam eder (bkz. buyukluk()).
+     */
+    private static Attribute cozScaleAttribute() {
+        for (String ad : new String[]{"SCALE", "GENERIC_SCALE"}) {
+            try {
+                Object deger = Attribute.class.getField(ad).get(null);
+                if (deger instanceof Attribute a) return a;
+            } catch (Exception ignored) { }
+        }
+        try {
+            Class<?> registryClass = Class.forName("org.bukkit.Registry");
+            Object registryAttr = registryClass.getField("ATTRIBUTE").get(null);
+            java.lang.reflect.Method getMetod = registryClass.getMethod("get", NamespacedKey.class);
+            Object sonuc = getMetod.invoke(registryAttr, NamespacedKey.minecraft("scale"));
+            if (sonuc instanceof Attribute a) return a;
+        } catch (Exception ignored) { }
+        return null;
+    }
 
     private static final String[] ISIM_ONEKLERI = {"Unutulmuş", "Gömülü", "Kara", "Lanetli", "Kadim", "Karanlık", "Yankılanan", "Kayıp"};
     private static final String[] ISIM_SONEKLERI = {"Mahzen", "Labirent", "Galeri", "Tapınak", "Çukur", "Zindan", "Oyuk", "Mezar"};
@@ -80,6 +114,7 @@ public class ZindanYoneticisi implements Listener {
 
     private int bekciSayaci;
     private int yakinlikSayaci;
+    private int dalgaSayaci;
 
     public ZindanYoneticisi(ArenaLigi plugin) {
         this.plugin = plugin;
@@ -98,8 +133,16 @@ public class ZindanYoneticisi implements Listener {
     private double zindanlarArasiMin() { return plugin.getConfig().getDouble("zindan.zindanlar-arasi-min-uzaklik", 400); }
     private double yakinlikEsigi() { return plugin.getConfig().getDouble("zindan.yakinlik-esigi", 2800); }
     private double yakinlikSpawnUzakligi() { return plugin.getConfig().getDouble("zindan.yakinlik-spawn-uzakligi", 1000); }
-    private int minKat() { return plugin.getConfig().getInt("zindan.min-kat", 3); }
-    private int maxKat() { return plugin.getConfig().getInt("zindan.max-kat", 5); }
+    // Kullanıcı isteği (Ekim 2026): "belki 6-7 katı kadar ulaşabilirsin" - varsayılan aralık büyütüldü.
+    private int minKat() { return plugin.getConfig().getInt("zindan.min-kat", 4); }
+    private int maxKat() { return plugin.getConfig().getInt("zindan.max-kat", 7); }
+    // Dalga-savunma ayarları (kullanıcı isteği: "bir sonraki katı yaşayabilmek için dalga dalga gelen
+    // yaratıkları öldürebilmemiz gereksin") - bkz. dalgaBekcisi/dalgaBaslat/dalgaIlerlet/katiAc.
+    private int dalgaSayisiMin() { return plugin.getConfig().getInt("zindan.dalga-sayisi-min", 2); }
+    private int dalgaSayisiMax() { return plugin.getConfig().getInt("zindan.dalga-sayisi-max", 4); }
+    private int dalgaMobTaban() { return plugin.getConfig().getInt("zindan.dalga-mob-taban", 3); }
+    private double dalgaMobTierCarpani() { return plugin.getConfig().getDouble("zindan.dalga-mob-tier-carpani", 0.6); }
+    private double dalgaTetiklemeYaricapi() { return plugin.getConfig().getDouble("zindan.dalga-tetikleme-yaricapi", 9); }
     private int katYuksekligiAyari() { return plugin.getConfig().getInt("zindan.kat-yuksekligi", 9); }
     private double canTemel() { return plugin.getConfig().getDouble("zindan.can-temel", 70); }
     private double canTierCarpani() { return plugin.getConfig().getDouble("zindan.can-tier-carpani", 1.45); }
@@ -145,6 +188,14 @@ public class ZindanYoneticisi implements Listener {
         } catch (Exception e) {
             plugin.getLogger().log(java.util.logging.Level.SEVERE, "Zindan tick() - menzil bekçisi hatası (atlanıyor)", e);
         }
+        try {
+            if (++dalgaSayaci >= 3) { // ~3 sn'de bir - tetikleme/ilerleme kontrolü ambient bekçiden daha sık olmalı
+                dalgaSayaci = 0;
+                dalgaBekcisi();
+            }
+        } catch (Exception e) {
+            plugin.getLogger().log(java.util.logging.Level.SEVERE, "Zindan tick() - dalga bekçisi hatası (atlanıyor)", e);
+        }
     }
 
     // ------------------------------------------------------------------ ÜRETİM
@@ -165,14 +216,18 @@ public class ZindanYoneticisi implements Listener {
         z.katSayisi = katSayisi;
         z.katYuksekligi = katYuksekligi;
         z.olusturulmaZamani = System.currentTimeMillis();
-        String[] bossSecenekleri = {"TAS_YURUYEN", "KAN_CELLAT", "ISKELET_KRALI"};
+        // Kullanıcı isteği (Ekim 2026): "Wither" yeni bir boss varyantı olarak eklendi (KARA_RUH).
+        String[] bossSecenekleri = {"TAS_YURUYEN", "KAN_CELLAT", "ISKELET_KRALI", "KARA_RUH"};
         z.bossVaryanti = bossSecenekleri[rng.nextInt(bossSecenekleri.length)];
         zindanlar.put(z.id, z);
 
         for (int kat = 0; kat < yapi.katlar.size(); kat++) {
             ZindanInsaatYardimcisi.KatSonuc ks = yapi.katlar.get(kat);
             z.katMerkezleri.put(kat, ks.merkez.clone());
-            int yariCap = (z.bossKati(kat) ? 15 : 10) + Math.min(5, kat); // ZindanInsaatYardimcisi#insaKat'taki formülle aynı
+            // ZindanInsaatYardimcisi#yariCapHesapla ile AYNI formül (paylaşılan tek kaynak - bkz. o metodun
+            // yorumu) - labirent katları büyütülünce burada eski/dar bir değer kalıp zindaniFizikselSil'in
+            // temizlik marjını daraltmasın diye kopya formül yerine doğrudan çağrılıyor.
+            int yariCap = ZindanInsaatYardimcisi.yariCapHesapla(z.bossKati(kat), kat);
             z.katYariCaplari.put(kat, yariCap);
             if (z.bossKati(kat)) {
                 bossDogur(z, kat, ks, rng);
@@ -180,6 +235,10 @@ public class ZindanYoneticisi implements Listener {
             } else {
                 for (Location sandikNoktasi : ks.sandikNoktalari) sandikDoldur(sandikNoktasi, kat + 1, rng);
                 katTopla(z, kat, ks.mobNoktalari, ks.eliteNoktasi, rng);
+                // Kullanıcı isteği: "bir sonraki katı yaşayabilmek için dalga dalga gelen yaratıkları
+                // öldürebilmemiz gereksin" - bu katın bir alt kata inen şaftının tıkaç noktası kaydedilir,
+                // kat varsayılan KİLİTLİ başlar (z.katAcikMi'de kayıt yok = false, bkz. Zindan#katAcikMi).
+                if (ks.kilitNoktasi != null) z.kilitNoktalari.put(kat, ks.kilitNoktasi.clone());
             }
         }
         kaydet();
@@ -232,9 +291,21 @@ public class ZindanYoneticisi implements Listener {
     private void katTopla(Zindan z, int kat, List<Location> noktalar, Location eliteNoktasi, Random rng) {
         int tier = kat + 1;
         for (Location n : noktalar) {
-            canliDogur(z, kat, tier, rng.nextBoolean() ? EntityType.ZOMBIE : EntityType.SKELETON, n, rng, false);
+            canliDogur(z, kat, tier, rastgeleMobTuru(tier, rng), n, rng, false);
         }
         if (eliteNoktasi != null) canliDogur(z, kat, tier, EntityType.VINDICATOR, eliteNoktasi, rng, false);
+    }
+
+    /**
+     * Kullanıcı isteği (Ekim 2026): "Wither Skeleton. Wither. Enderman" yeni mob TÜRLERİ olarak eklendi
+     * (zombi/iskelet havuzunun üstüne, kat derinleştikçe/tier arttıkça devreye giriyor) - temel havuz
+     * (zombi/iskelet) hâlâ en yaygın, yeni türler daha derin/zor katlarda nadiren karışıyor.
+     */
+    private EntityType rastgeleMobTuru(int tier, Random rng) {
+        double zar = rng.nextDouble();
+        if (tier >= 4 && zar < 0.12) return EntityType.ENDERMAN;
+        if (tier >= 3 && zar < 0.28) return EntityType.WITHER_SKELETON;
+        return rng.nextBoolean() ? EntityType.ZOMBIE : EntityType.SKELETON;
     }
 
     private LivingEntity canliDogur(Zindan z, int kat, int tier, EntityType tur, Location konum, Random rng, boolean bossMu) {
@@ -262,32 +333,77 @@ public class ZindanYoneticisi implements Listener {
     }
 
     private Varyant rastgeleVaryant(Random rng) {
-        // Kullanıcı isteği: "moblar zor olsun" - NORMAL oranı düşürüldü, HIZLI/GUCLU daha sık.
+        // Kullanıcı isteği: "moblar zor olsun" + "bir sürü varyant ekle" - NORMAL oranı düşük, kalan 4
+        // varyant (HIZLI/GUCLU/ZIRHLI/MINI) birbirine yakın oranlarda dağıtılıyor.
         double zar = rng.nextDouble();
-        if (zar < 0.35) return Varyant.NORMAL;
-        return zar < 0.65 ? Varyant.HIZLI : Varyant.GUCLU;
+        if (zar < 0.20) return Varyant.NORMAL;
+        if (zar < 0.42) return Varyant.HIZLI;
+        if (zar < 0.64) return Varyant.GUCLU;
+        if (zar < 0.84) return Varyant.ZIRHLI;
+        return Varyant.MINI;
     }
 
     /**
-     * HIZLI: daha hızlı hareket eder ama daha az vurur. GUCLU: daha yavaştır ama daha çok vurur VE
-     * vanilla menzilden biraz daha uzaktan da (ekstra) hasar verebilir - gerçek NMS reach değişikliği
-     * yapmak yerine menzilBekcisi() ile simüle ediliyor (bkz. o metot).
+     * HIZLI: Speed III-IV (kullanıcı isteği: "speed 3-4") ama daha az vurur. GUCLU: daha yavaştır ama
+     * ÇOK daha çok vurur (kullanıcı isteği: "daha yavaş ama daha sert vurur") VE vanilla menzilden biraz
+     * daha uzaktan da (ekstra) hasar verebilir (bkz. menzilBekcisi). ZIRHLI: ağır zırh + büyük Scale +
+     * daha fazla can (kullanıcı isteği: "zırhlı zombi ağır, biraz daha büyük"). MINI: küçük Scale, daha
+     * az can/hasar ama hafif hızlı (kullanıcı isteği: "birkaç scale daha küçük").
      */
     private void varyantUygula(LivingEntity canli, Varyant v, int tier) {
         AttributeInstance hasarAttr = canli.getAttribute(Attribute.ATTACK_DAMAGE);
         double temelHasar = hasarAttr != null ? hasarAttr.getBaseValue() : 4;
         switch (v) {
             case HIZLI -> {
-                canli.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, Math.min(2, 1 + tier / 3), false, false));
-                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 0.7);
+                int amp = Math.min(3, 2 + tier / 4); // Speed III (amp 2) .. Speed IV (amp 3)
+                canli.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, amp, false, false));
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 0.6);
             }
             case GUCLU -> {
                 canli.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Integer.MAX_VALUE, 1, false, false));
-                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.6);
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.8);
                 uzunMenzilliCanlilar.add(canli.getUniqueId());
+            }
+            case ZIRHLI -> {
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.25);
+                AttributeInstance canAttrZ = canli.getAttribute(Attribute.MAX_HEALTH);
+                if (canAttrZ != null) {
+                    canAttrZ.setBaseValue(canAttrZ.getBaseValue() * 1.35);
+                    canli.setHealth(canAttrZ.getBaseValue());
+                }
+                buyukluk(canli, 1.15 + Math.min(0.35, tier * 0.05));
+                zirhGiydir(canli);
+            }
+            case MINI -> {
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 0.75);
+                canli.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1, false, false));
+                AttributeInstance canAttrM = canli.getAttribute(Attribute.MAX_HEALTH);
+                if (canAttrM != null) {
+                    canAttrM.setBaseValue(canAttrM.getBaseValue() * 0.6);
+                    canli.setHealth(canAttrM.getBaseValue());
+                }
+                buyukluk(canli, Math.max(0.4, 0.7 - Math.min(0.2, tier * 0.03)));
             }
             default -> { }
         }
+    }
+
+    /** SCALE özniteliği bu sunucunun API derlemesinde garanti değil (bkz. SCALE_ATTR çözümü) - bulunamazsa
+     *  sessizce atlanır, sadece stat/zırh etkisi (zaten ayrı uygulanıyor) kalır. */
+    private void buyukluk(LivingEntity canli, double carpan) {
+        if (SCALE_ATTR == null) return;
+        AttributeInstance scaleAttr = canli.getAttribute(SCALE_ATTR);
+        if (scaleAttr != null) scaleAttr.setBaseValue(carpan);
+    }
+
+    /** ZIRHLI varyant için demir zırh takımı - ekipman slotu olmayan canlılarda (ör. Enderman) sessizce atlanır. */
+    private void zirhGiydir(LivingEntity canli) {
+        EntityEquipment eq = canli.getEquipment();
+        if (eq == null) return;
+        eq.setHelmet(new ItemStack(Material.IRON_HELMET));
+        eq.setChestplate(new ItemStack(Material.IRON_CHESTPLATE));
+        eq.setLeggings(new ItemStack(Material.IRON_LEGGINGS));
+        eq.setBoots(new ItemStack(Material.IRON_BOOTS));
     }
 
     // ------------------------------------------------------------------ BOSS
@@ -296,6 +412,7 @@ public class ZindanYoneticisi implements Listener {
         EntityType tur = switch (z.bossVaryanti) {
             case "TAS_YURUYEN" -> EntityType.RAVAGER;
             case "KAN_CELLAT" -> EntityType.VINDICATOR;
+            case "KARA_RUH" -> EntityType.WITHER;
             default -> EntityType.SKELETON;
         };
         int tier = kat + 1;
@@ -329,6 +446,10 @@ public class ZindanYoneticisi implements Listener {
                 }
                 okYagmuruBaslat(z, boss.getUniqueId());
             }
+            case "KARA_RUH" -> {
+                if (canAttr != null) canAttr.setBaseValue(temelCan * 1.9);
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.4);
+            }
         }
         if (canAttr != null) boss.setHealth(canAttr.getBaseValue());
         z.bossUuid = boss.getUniqueId();
@@ -357,6 +478,7 @@ public class ZindanYoneticisi implements Listener {
             case "TAS_YURUYEN" -> "Taş Yürüyen";
             case "KAN_CELLAT" -> "Kan Cellat";
             case "ISKELET_KRALI" -> "İskelet Kralı";
+            case "KARA_RUH" -> "Kara Ruh";
             default -> varyant;
         };
     }
@@ -406,7 +528,12 @@ public class ZindanYoneticisi implements Listener {
             bossOlumIsle(z);
             return;
         }
-        if (kat != null) z.katCanlilari(kat).remove(le.getUniqueId());
+        if (kat != null) {
+            z.katCanlilari(kat).remove(le.getUniqueId());
+            // Dalga savunması: öldüğü an o dalganın canlı kümesinden de düşsün - dalgaBekcisi bir sonraki
+            // turunda (en fazla ~3 sn sonra) kümenin boşaldığını görüp bir sonraki dalgayı başlatır/katı açar.
+            z.katDalgaCanlilari(kat).remove(le.getUniqueId());
+        }
         int tier = (kat == null ? 0 : kat) + 1;
         Random rng = new Random();
         double carpan = lootXpTaban() + tier * lootXpTier();
@@ -490,13 +617,18 @@ public class ZindanYoneticisi implements Listener {
                 canlilar.removeIf(uuid -> Bukkit.getEntity(uuid) == null);
 
                 int tier = kat + 1;
-                int hedefSayi = 3 + (int) Math.round(tier * 1.4); // ZindanInsaatYardimcisi#insaKat'taki mobSayisi formülüyle aynı
+                // Labirent katı büyüdükçe (bkz. ZindanInsaatYardimcisi#insaKatLabirent - gridBoyutu) ilk
+                // doğumda hücre sayısı kadar (3x3=8 .. 5x5=24) mob vardı; ambient bekçi bunu TAM o sayıda
+                // tutmaya çalışmaz (sürekli dolu bir labirent yorucu olur) - daha ölçülü bir taban hedefler,
+                // ölenler zamanla bu tabana kadar azalır ve öyle kalır.
+                int gridBoyutu = Math.min(5, 3 + tier / 2);
+                int hedefSayi = Math.max(4, ((gridBoyutu * gridBoyutu) - 1) / 2);
                 int eksik = hedefSayi - canlilar.size();
                 for (int i = 0; i < eksik; i++) {
                     double aci = rng.nextDouble() * Math.PI * 2;
                     double uzaklik = 1 + rng.nextDouble() * Math.max(1, yariCap - 2);
                     Location nokta = merkez.clone().add(Math.cos(aci) * uzaklik, 0, Math.sin(aci) * uzaklik);
-                    canliDogur(z, kat, tier, rng.nextBoolean() ? EntityType.ZOMBIE : EntityType.SKELETON, nokta, rng, false);
+                    canliDogur(z, kat, tier, rastgeleMobTuru(tier, rng), nokta, rng, false);
                 }
             }
 
@@ -604,6 +736,98 @@ public class ZindanYoneticisi implements Listener {
                 uzunMenzilSonVurus.put(id, simdi);
                 break;
             }
+        }
+    }
+
+    // ------------------------------------------------------------------ DALGA SAVUNMASI (kat kilidi)
+    /**
+     * Kullanıcı isteği (Ekim 2026): "bir sonraki katı yaşayabilmek için dalga dalga gelen yaratıkları
+     * öldürebilmemiz gereksin". Her kat (boss katı hariç) z.katAcikMi(kat)==false ise kilitlidir (bkz.
+     * ZindanInsaatYardimcisi#insaEt - tıkaç bloğu, kilitNoktalari). Bir oyuncu kilitli bir kata
+     * tetikleme yarıçapı içine girince dalgalar başlar; bir dalganın tüm canlıları ölünce bir sonraki
+     * dalga gelir, son dalga da bitince kat kalıcı olarak açılır (persist edilir) ve tıkaç kaldırılır.
+     */
+    private void dalgaBekcisi() {
+        for (Zindan z : zindanlar.values()) {
+            if (z.temizlendi) continue;
+            for (int kat = 0; kat < z.katSayisi - 1; kat++) {
+                if (z.katAcikMi(kat)) continue;
+                Location merkez = z.katMerkezleri.get(kat);
+                if (merkez == null || merkez.getWorld() == null) continue;
+                if (!merkez.getWorld().isChunkLoaded(merkez.getBlockX() >> 4, merkez.getBlockZ() >> 4)) continue;
+
+                int dalgaNo = z.katDalgaNo.getOrDefault(kat, 0);
+                if (dalgaNo == 0) {
+                    boolean oyuncuYakinda = !merkez.getNearbyPlayers(dalgaTetiklemeYaricapi()).isEmpty();
+                    if (oyuncuYakinda) dalgaBaslat(z, kat, merkez);
+                    continue;
+                }
+                Set<UUID> canlilar = z.katDalgaCanlilari(kat);
+                canlilar.removeIf(uuid -> Bukkit.getEntity(uuid) == null);
+                if (canlilar.isEmpty()) dalgaIlerlet(z, kat, merkez);
+            }
+        }
+    }
+
+    private int dalgaSayisi(int tier) {
+        return Math.min(dalgaSayisiMax(), dalgaSayisiMin() + tier / 2);
+    }
+
+    private int dalgaMobSayisi(int tier, int dalgaNo) {
+        return dalgaMobTaban() + (int) Math.round(tier * dalgaMobTierCarpani()) + (dalgaNo - 1);
+    }
+
+    private void dalgaSpawnEt(Zindan z, int kat, Location merkez, int tier, int dalgaNo, Random rng) {
+        Integer yariCap = z.katYariCaplari.get(kat);
+        int yc = yariCap == null ? 6 : Math.max(3, yariCap - 2);
+        int sayi = dalgaMobSayisi(tier, dalgaNo);
+        for (int i = 0; i < sayi; i++) {
+            double aci = rng.nextDouble() * Math.PI * 2;
+            double uzaklik = 1 + rng.nextDouble() * yc;
+            Location nokta = merkez.clone().add(Math.cos(aci) * uzaklik, 0, Math.sin(aci) * uzaklik);
+            LivingEntity canli = canliDogur(z, kat, tier, rastgeleMobTuru(tier, rng), nokta, rng, false);
+            z.katDalgaCanlilari(kat).add(canli.getUniqueId());
+        }
+    }
+
+    private void dalgaBaslat(Zindan z, int kat, Location merkez) {
+        int tier = kat + 1;
+        Random rng = new Random();
+        z.katDalgaNo.put(kat, 1);
+        dalgaSpawnEt(z, kat, merkez, tier, 1, rng);
+        int toplamDalga = dalgaSayisi(tier);
+        for (Player p : merkez.getNearbyPlayers(24)) {
+            p.sendMessage(Mesaj.renk("&c&l" + z.isim + " &7- " + (kat + 1) + ". kat kilitli! &eDalga 1/" + toplamDalga + " &7başladı - hepsini öldür."));
+            p.playSound(p.getLocation(), Sound.ENTITY_WITHER_SPAWN, 0.6f, 1.3f);
+        }
+    }
+
+    private void dalgaIlerlet(Zindan z, int kat, Location merkez) {
+        int tier = kat + 1;
+        int toplamDalga = dalgaSayisi(tier);
+        int dalgaNo = z.katDalgaNo.getOrDefault(kat, 0);
+        if (dalgaNo >= toplamDalga) {
+            katiAc(z, kat, merkez);
+            return;
+        }
+        int yeniDalga = dalgaNo + 1;
+        z.katDalgaNo.put(kat, yeniDalga);
+        dalgaSpawnEt(z, kat, merkez, tier, yeniDalga, new Random());
+        for (Player p : merkez.getNearbyPlayers(24)) {
+            p.sendMessage(Mesaj.renk("&e" + z.isim + " &7- Dalga " + yeniDalga + "/" + toplamDalga + " başladı!"));
+        }
+    }
+
+    private void katiAc(Zindan z, int kat, Location merkez) {
+        z.katAcikMi.put(kat, true);
+        Location kilit = z.kilitNoktalari.get(kat);
+        if (kilit != null && kilit.getWorld() != null) {
+            kilit.getBlock().setType(Material.AIR);
+        }
+        kaydet();
+        for (Player p : merkez.getNearbyPlayers(24)) {
+            p.sendMessage(Mesaj.renk("&a&l" + z.isim + " &7- " + (kat + 1) + ". kat temizlendi! &aYol açıldı."));
+            p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
         }
     }
 
@@ -788,6 +1012,13 @@ public class ZindanYoneticisi implements Listener {
                 y.set(yol + ".katlar." + e.getKey() + ".merkez", Konum.yaz(e.getValue()));
                 Integer yr = z.katYariCaplari.get(e.getKey());
                 y.set(yol + ".katlar." + e.getKey() + ".yaricap", yr == null ? 6 : yr);
+                // Dalga savunması (kullanıcı isteği) - bir kere açılan kat bir daha kilitlenmesin diye
+                // acik durumu kalıcı; dalga ilerleme durumu (katDalgaNo/katDalgaCanlilari) bilerek
+                // persist edilmiyor (bkz. Zindan.java - restart'ta güvenli şekilde sıfırlanır).
+                Boolean acik = z.katAcikMi.get(e.getKey());
+                if (acik != null) y.set(yol + ".katlar." + e.getKey() + ".acik", acik);
+                Location kilit = z.kilitNoktalari.get(e.getKey());
+                if (kilit != null) y.set(yol + ".katlar." + e.getKey() + ".kilit-noktasi", Konum.yaz(kilit));
             }
         }
         return y;
@@ -832,6 +1063,9 @@ public class ZindanYoneticisi implements Listener {
                     Location merkezKat = Konum.oku(kc.getString("merkez"));
                     if (merkezKat != null) z.katMerkezleri.put(kat, merkezKat);
                     z.katYariCaplari.put(kat, kc.getInt("yaricap", 6));
+                    if (kc.contains("acik")) z.katAcikMi.put(kat, kc.getBoolean("acik", false));
+                    Location kilitKat = Konum.oku(kc.getString("kilit-noktasi"));
+                    if (kilitKat != null) z.kilitNoktalari.put(kat, kilitKat);
                 }
             }
             zindanlar.put(z.id, z);

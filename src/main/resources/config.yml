@@ -269,8 +269,8 @@ zindan:
   zindanlar-arasi-min-uzaklik: 400  # İki zindan birbirinden en az bu kadar uzak olur
   yakinlik-esigi: 2800              # Bir oyuncunun en yakın zindana uzaklığı bunu aşarsa (keşifte "boş bölge") yeni zindan üretilir
   yakinlik-spawn-uzakligi: 1000     # Yukarıdaki durumda yeni zindan, oyuncunun bu kadar (rastgele yönde) ötesine üretilir
-  min-kat: 3                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı) - zorluk göstergesi olarak da kullanılır (bkz. boss-odul-min/max)
-  max-kat: 5
+  min-kat: 4                        # Bir zindanın kat sayısı bu ile max-kat arasında rastgele seçilir (son kat = boss katı) - zorluk göstergesi olarak da kullanılır (bkz. boss-odul-min/max). Kullanıcı isteği (Ekim 2026): "belki 6-7 katı kadar ulaşabilirsin" - aralık büyütüldü.
+  max-kat: 7
   kat-yuksekligi: 9                 # Bir kattan bir sonrakine Y farkı (blok) - büyütüldü (kullanıcı isteği)
   can-temel: 70                     # 1. kat canlılarının temel canı; her kat can-tier-carpani ile çarpılır - zorlaştırıldı (kullanıcı isteği)
   can-tier-carpani: 1.45
@@ -286,3 +286,11 @@ zindan:
   # içinde otomatik silinir (kayıt + fiziksel yapı) - bkz. ZindanYoneticisi#zindaniFizikselSil.
   silinme-gun-min: 2.0
   silinme-gun-max: 3.0
+  # Dalga savunması (kullanıcı isteği, Ekim 2026: "bir sonraki katı yaşayabilmek için dalga dalga gelen
+  # yaratıkları öldürebilmemiz gereksin"). Her kat (boss katı hariç) varsayılan kilitlidir; bir oyuncu
+  # tetikleme-yarıçapı içine girince dalgalar başlar - bkz. ZindanYoneticisi#dalgaBekcisi.
+  dalga-sayisi-min: 2               # Bir katın dalga sayısı = min(dalga-sayisi-max, dalga-sayisi-min + tier/2)
+  dalga-sayisi-max: 4
+  dalga-mob-taban: 3                # Bir dalgadaki mob sayısı = taban + round(tier * carpan) + (dalga-no - 1)
+  dalga-mob-tier-carpani: 0.6
+  dalga-tetikleme-yaricapi: 9       # Bir oyuncu kilitli kattaki bu yarıçapa girince dalgalar tetiklenir (blok)

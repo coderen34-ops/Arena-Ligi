@@ -28,6 +28,14 @@ public class Zindan {
     // türetir - fiziksel yapı zaten inşa edilmiş durduğu için tekrar inşa etmeye gerek kalmaz.
     public final Map<Integer, Location> katMerkezleri = new LinkedHashMap<>();
     public final Map<Integer, Integer> katYariCaplari = new LinkedHashMap<>();
+    // Kullanıcı isteği (Ekim 2026): "dalga dalga gelen yaratıkları öldürebilmemiz gereksin" - her kat
+    // (boss katı hariç) varsayılan KİLİTLİ: bir oyuncu o kata girince dalgalar başlar, son dalga
+    // bitmeden bir alt kata inen şaft kilitli (bkz. kilitNoktalari - o kattaki fiziksel tıkaç bloğu).
+    // katAcikMi persist edilir (bir kere açılan kat bir daha kilitlenmez); dalga ilerleme durumu
+    // (katDalgaNo/katDalgaCanlilari, aşağıda) runtime-only - restart olursa kat güvenli şekilde
+    // "henüz başlamadı" durumuna döner (oyuncu tekrar girince dalgalar yeniden başlar).
+    public final Map<Integer, Boolean> katAcikMi = new LinkedHashMap<>();
+    public final Map<Integer, Location> kilitNoktalari = new LinkedHashMap<>();
 
     public boolean temizlendi; // boss öldürüldü mü - true olunca bir daha hiçbir katta mob/boss doğmaz (vahşi kale mantığı)
     public String bossVaryanti; // "TAS_YURUYEN" | "KAN_CELLAT" | "ISKELET_KRALI"
@@ -42,6 +50,9 @@ public class Zindan {
     // eksikse tamamlar) ve boss'a verilen hasarın oyuncu bazında katkısı (ödül paylaşımı için).
     public final Map<Integer, Set<UUID>> katCanlilari = new LinkedHashMap<>();
     public final Map<UUID, Double> bossHasarKatkisi = new LinkedHashMap<>();
+    // Dalga durumu (runtime-only, persist edilmez): 0 = henüz tetiklenmedi, 1..dalgaSayisi = o dalgada.
+    public final Map<Integer, Integer> katDalgaNo = new LinkedHashMap<>();
+    public final Map<Integer, Set<UUID>> katDalgaCanlilari = new LinkedHashMap<>();
 
     public Zindan(UUID id) {
         this.id = id;
@@ -49,6 +60,14 @@ public class Zindan {
 
     public Set<UUID> katCanlilari(int kat) {
         return katCanlilari.computeIfAbsent(kat, k -> new LinkedHashSet<>());
+    }
+
+    public Set<UUID> katDalgaCanlilari(int kat) {
+        return katDalgaCanlilari.computeIfAbsent(kat, k -> new LinkedHashSet<>());
+    }
+
+    public boolean katAcikMi(int kat) {
+        return bossKati(kat) || Boolean.TRUE.equals(katAcikMi.get(kat));
     }
 
     public boolean bossKati(int kat) {
