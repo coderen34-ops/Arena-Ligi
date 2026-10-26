@@ -38,6 +38,7 @@ public class ArenaLigi extends JavaPlugin {
     private me.arenaligi.lig.LigEtiketi etiket;
     private me.arenaligi.lig.SiralamaTablosu tablo;
     private EtkinlikYonetici etkinlik;
+    private me.arenaligi.turnuva.TurnuvaYonetici turnuva;
     private me.arenaligi.zindan.ZindanYoneticisi zindan;
 
     // Dosyalar tek bir arka plan thread'inde sırayla yazılır
@@ -79,6 +80,7 @@ public class ArenaLigi extends JavaPlugin {
         tablo = new me.arenaligi.lig.SiralamaTablosu(this);
         etkinlik = new EtkinlikYonetici(this);
         zindan = new me.arenaligi.zindan.ZindanYoneticisi(this);
+        turnuva = new me.arenaligi.turnuva.TurnuvaYonetici(this);
 
         getServer().getPluginManager().registerEvents(kuyruk, this);
         getServer().getPluginManager().registerEvents(etkinlik, this);
@@ -108,6 +110,7 @@ public class ArenaLigi extends JavaPlugin {
     @Override
     public void onDisable() {
         // Süren maç iptal edilir (ücretler iade), kit kullananların eşyaları geri verilir (yedek dosyası senkron yazılır)
+        if (turnuva != null) turnuva.kapanis(); // ücretler iade edilir, sonra süren maç kapanır
         if (mac != null) mac.kapanis();
         if (yedek != null) yedek.hepsiniGeriVer();
         if (seyirci != null) seyirci.hemenKaydet();
@@ -158,5 +161,6 @@ public class ArenaLigi extends JavaPlugin {
     public me.arenaligi.lig.LigEtiketi etiket() { return etiket; }
     public me.arenaligi.lig.SiralamaTablosu tablo() { return tablo; }
     public EtkinlikYonetici etkinlik() { return etkinlik; }
+    public me.arenaligi.turnuva.TurnuvaYonetici turnuva() { return turnuva; }
     public me.arenaligi.zindan.ZindanYoneticisi zindan() { return zindan; }
 }

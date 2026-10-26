@@ -103,6 +103,42 @@ public class MacYonetici implements Listener {
     private static final int GIRIS_ARALIK = 3; // Dövüşçü anonsları arası saniye
 
     // ------------------------------------------------------------------ SORGULAR
+    // ------------------------------------------------------------------ TURNUVA ENTEGRASYONU
+    private boolean turnuvaAktif = false;
+    /** Turnuva sürerken normal sıra eşleştirmesi duraklar (turnuva maçları arasında kuyruk araya girmesin). */
+    public void turnuvaAktif(boolean aktif) { turnuvaAktif = aktif; }
+    public boolean turnuvaAktifMi() { return turnuvaAktif; }
+
+    /**
+     * Turnuva maçı başlatır: iki dövüşçü önceden onaylı sayılır, giriş ücreti alınmaz (turnuva ücreti
+     * kayıtta alındı), ELO/istatistik değişmez. false: şu an başka maç sürüyor ya da biri uygun değil.
+     * sonuc: maç kapanınca kazananın UUID'si ile (iptal/hata durumunda null ile) bir sonraki tick'te çağrılır.
+     */
+    public boolean turnuvaMaciBaslat(UUID a, UUID b, java.util.function.Consumer<UUID> sonuc) {
+        if (mac != null || !plugin.arena().hazir() || plugin.kitler().bosMu()) return false;
+        Dovuscu da = plugin.dovusculer().get(a), db = plugin.dovusculer().get(b);
+        Player pa = Bukkit.getPlayer(a), pb = Bukkit.getPlayer(b);
+        if (da == null || db == null || pa == null || pb == null) return false;
+        if (plugin.kuyruk().engel(pa) != null || plugin.kuyruk().engel(pb) != null) return false;
+        List<List<UUID>> takimlar = new ArrayList<>();
+        takimlar.add(new ArrayList<>(List.of(a)));
+        takimlar.add(new ArrayList<>(List.of(b)));
+        mac = new Mac(Long.toString(System.currentTimeMillis(), 36), MacBicimi.BIRE_BIR, takimlar, 0.0);
+        mac.turnuva = true;
+        mac.turnuvaSonuc = sonuc;
+        for (Dovuscu d : List.of(da, db)) {
+            mac.isimler.put(d.uuid, d.isim);
+            mac.lakaplar.put(d.uuid, d.lakap);
+        }
+        mac.onaylar.add(a);
+        mac.onaylar.add(b);
+        mac.durumBaslangic = System.currentTimeMillis();
+        sirayaAlinmis.remove(a);
+        sirayaAlinmis.remove(b);
+        dosya.kaydet();
+        return true;
+    }
+
     public Mac aktifMac() { return mac; }
     public boolean macta(UUID u) { return mac != null && mac.oyuncuMu(u); }
     public long sonrakiEslestirme() { return sonrakiEslestirme; }
@@ -116,7 +152,7 @@ public class MacYonetici implements Listener {
         if (mac == null) {
             // Sabit "aralik-dakika" beklemesi kaldırıldı: sadece maç sonu 30 sn'lik soğuma (sonlandir())
             // geçtiyse her tick'te (saniyede bir) tekrar eşleştirmeyi dener, boşluk bırakmaz.
-            if (simdi >= sonrakiEslestirme) eslestir();
+            if (simdi >= sonrakiEslestirme && !turnuvaAktif) eslestir();
             return;
         }
         long gecen = simdi - mac.durumBaslangic;
@@ -150,6 +186,7 @@ public class MacYonetici implements Listener {
      */
     private void sirayaAl() {
         if (mac == null || (mac.durum != Mac.Durum.GIRIS && mac.durum != Mac.Durum.DOVUS)) return;
+        if (turnuvaAktif) return;
         if (!plugin.arena().hazir() || plugin.kitler().bosMu()) return;
         sirayaAlinmis.removeIf(u -> !plugin.kuyruk().siradaMi(u));
         if (!sirayaAlinmis.isEmpty()) return; // Zaten bir çift bekleme salonunda sırada, onlar gerçek maça geçene dek başkasını almıyoruz
@@ -521,6 +558,21 @@ public class MacYonetici implements Listener {
 
     /** kazanan: takım sırası, -1 berabere (ücretler iade). */
     private void bitir(int kazanan, String sebep) {
+        if (mac.turnuva) {
+            // Turnuvada berabere yok: eşitlikte ayakta kalan, o da yoksa rastgele biri ilerler
+            if (kazanan < 0) {
+                boolean a0 = mac.takimAyakta(0), a1 = mac.takimAyakta(1);
+                kazanan = (a0 != a1) ? (a0 ? 0 : 1) : new java.util.Random().nextInt(2);
+                sebep = sebep + " (turnuvada berabere yok, kura/ayakta kalan)";
+            }
+            UUID k = mac.takimlar.get(kazanan).get(0), y = mac.takimlar.get(1 - kazanan).get(0);
+            herkeseDuyur("turnuva-mac-sonuc", "&6&l🏆 TURNUVA: &f{kazanan} &6turu geçti! &7({baslik} - {sebep})",
+                    "kazanan", "\"" + mac.lakaplar.getOrDefault(k, mac.isimler.get(k)) + "\"", "baslik", mac.baslik(), "sebep", sebep);
+            titleGonder(Bukkit.getPlayer(k), m().metin("title-turnuva-tur", "&a&lTUR GEÇTİN!"), "", Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f);
+            titleGonder(Bukkit.getPlayer(y), m().metin("title-turnuva-elendin", "&c&lELENDİN"), "", Sound.ENTITY_VILLAGER_NO, 1f);
+            sonlandir(kazanan, false);
+            return;
+        }
         if (kazanan < 0) {
             herkeseDuyur("mac-berabere", "&e⚔ {baslik}: &fBERABERE &7({sebep}). Giriş ücretleri iade edildi.", "baslik", mac.baslik(), "sebep", sebep);
             for (UUID u : mac.oyuncular()) {
@@ -610,6 +662,10 @@ public class MacYonetici implements Listener {
         if (iade) for (UUID u : bitti.odeyenler) iade(u, bitti.isimler.get(u), bitti.ucret, "giriş ücreti (maç " + bitti.id + ")");
         plugin.bahis().sonuclandir(bitti, iade ? -1 : kazanan);
         for (UUID u : bitti.oyuncular()) geriGonder(u, bitti);
+        if (bitti.turnuva && bitti.turnuvaSonuc != null) {
+            UUID galip = (!iade && kazanan >= 0) ? bitti.takimlar.get(kazanan).get(0) : null;
+            Bukkit.getScheduler().runTask(plugin, () -> bitti.turnuvaSonuc.accept(galip));
+        }
         plugin.seyirci().macBitti();
         plugin.veri().kaydet();
         plugin.tablo().guncelle();

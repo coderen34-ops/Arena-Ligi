@@ -51,6 +51,14 @@ public class ArenaKomut implements TabExecutor {
             case "kitsec" -> plugin.mac().kitSec(p, args.length > 1 ? args[1] : null);
             case "mac", "maç", "durum" -> macDurumu(p);
             case "bahis" -> bahis(p, args);
+            case "turnuva" -> {
+                String t = args.length > 1 ? args[1].toLowerCase(Locale.ROOT) : "bilgi";
+                switch (t) {
+                    case "kayit", "kayıt" -> plugin.turnuva().kayit(p);
+                    case "cik", "çık" -> plugin.turnuva().cik(p);
+                    default -> plugin.turnuva().bilgi(p);
+                }
+            }
             case "cik", "çık" -> plugin.seyirci().cik(p);
             case "izle" -> plugin.seyirci().tribuneGit(p);
             case "bahismenu" -> {
@@ -67,6 +75,7 @@ public class ArenaKomut implements TabExecutor {
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena ayril", "aciklama", "Maç sırasından çık"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena mac", "aciklama", "Süren maç / sonraki eşleştirme"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena bahis <dövüşçü> <miktar>", "aciklama", "Maç öncesi bahis"));
+        s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena turnuva [kayit|cik]", "aciklama", "Haftalık turnuva: bilgi, kayıt, çekilme"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena izle | /arena cik", "aciklama", "Tribüne git (izleyici olunca bahis açılır) / tribünden çık"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena istatistik [oyuncu]", "aciklama", "Dövüşçü istatistikleri"));
         s.sendMessage(m().metin("yardim-satir", "&e{komut} &7- {aciklama}", "komut", "/arena siralama", "aciklama", "İlk 10 dövüşçü"));
@@ -174,6 +183,15 @@ public class ArenaKomut implements TabExecutor {
                 else m().gonder(s, "kullanim", "&cKullanım: &e{kullanim}", "kullanim", "/arena admin npc sil");
             }
             case "puan" -> adminPuan(s, args);
+            case "turnuva" -> {
+                String t = args.length > 2 ? args[2].toLowerCase(Locale.ROOT) : "";
+                switch (t) {
+                    case "ac", "aç" -> plugin.turnuva().kayitAc(s);
+                    case "baslat", "başlat" -> plugin.turnuva().kayitKapat(true);
+                    case "iptal" -> plugin.turnuva().iptal(s);
+                    default -> plugin.turnuva().bilgi(s);
+                }
+            }
             case "zindan" -> plugin.zindan().komut(s, args);
             case "hazine" -> plugin.etkinlik().hazineKomut(s, args);
             case "tablo" -> {
@@ -248,7 +266,9 @@ public class ArenaKomut implements TabExecutor {
     public List<String> onTabComplete(CommandSender s, Command command, String label, String[] args) {
         List<String> o = new ArrayList<>();
         if (args.length == 1) {
-            o.addAll(List.of("sira", "ayril", "hazir", "vazgec", "mac", "bahis", "izle", "cik", "istatistik", "siralama", "yardim"));
+            o.addAll(List.of("sira", "ayril", "hazir", "vazgec", "mac", "bahis", "turnuva", "izle", "cik", "istatistik", "siralama", "yardim"));
+        } else if (args.length == 2 && args[0].equalsIgnoreCase("turnuva")) {
+            o.addAll(plugin.turnuva().tabAdlari());
         } else if (args.length == 2 && args[0].equalsIgnoreCase("bahis") && plugin.mac().aktifMac() != null) {
             plugin.mac().aktifMac().lakaplar.values().forEach(o::add);
             if (s.hasPermission("arena.admin")) o.add("admin");
@@ -275,6 +295,7 @@ public class ArenaKomut implements TabExecutor {
                 o.addAll(plugin.zindan().isimler());
             }
             else if (args.length == 3 && args[1].equalsIgnoreCase("hazine")) o.add("baslat");
+            else if (args.length == 3 && args[1].equalsIgnoreCase("turnuva")) o.addAll(List.of("ac", "baslat", "iptal", "bilgi"));
         }
         String yazilan = args[args.length - 1].toLowerCase(Locale.ROOT);
         o.removeIf(x -> !x.toLowerCase(Locale.ROOT).startsWith(yazilan));

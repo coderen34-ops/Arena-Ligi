@@ -295,3 +295,15 @@ zindan:
   dalga-mob-taban: 3                # Bir dalgadaki mob sayısı = taban + round(tier * carpan) + (dalga-no - 1)
   dalga-mob-tier-carpani: 0.6
   dalga-tetikleme-yaricapi: 9       # Bir oyuncu kilitli kattaki bu yarıçapa girince dalgalar tetiklenir (blok)
+
+# Haftalık turnuva (Faz 3): tek eleme, katılımcılardan oluşan ödül havuzu. Komutlar: /arena turnuva [kayit|cik], yönetici: /arena admin turnuva ac|baslat|iptal
+turnuva:
+  aktif: true
+  gun: SATURDAY                 # Kayıtların açıldığı gün (İngilizce gün adı)
+  saat: "20:00"                 # Kayıtların açıldığı saat (saat-dilimi'ne göre)
+  saat-dilimi: Europe/Istanbul
+  kayit-dakika: 15              # Kayıt açık kalma süresi
+  giris-ucreti: 1000            # Katılım ücreti (banka); havuz = ücret x katılımcı
+  min-katilimci: 4              # Kayıt bitince bunun altındaysa turnuva iptal, ücretler iade
+  max-katilimci: 16
+  odul-dagilim: [0.60, 0.25, 0.05]   # Şampiyon, finalist, yarı finalist (her biri) payı; kalan belediye kasasına

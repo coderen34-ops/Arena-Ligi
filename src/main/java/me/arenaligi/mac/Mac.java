@@ -35,6 +35,8 @@ public class Mac {
     public final Set<UUID> elenen = new HashSet<>();              // Ölen / terk edip süresi dolan
     public int girisAdimi = 0;                                     // Arena giriş anonsu sırası
     public long dovusBaslangic = 0;
+    public boolean turnuva = false;                                 // Turnuva maçı: giriş ücreti yok, ELO/istatistik değişmez, berabere yok
+    public java.util.function.Consumer<UUID> turnuvaSonuc;          // Maç kapanınca kazanan (iptal/hata: null) ile çağrılır
     public final Map<UUID, String> kitOylari = new HashMap<>();     // BEKLEME'de oyuncunun seçtiği kit (oy)
 
     public Mac(String id, MacBicimi bicim, List<List<UUID>> takimlar, double ucret) {
