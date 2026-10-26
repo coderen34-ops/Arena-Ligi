@@ -591,6 +591,8 @@ public class ZindanYoneticisi implements Listener {
             Player bp = katki.getValue() > 0 ? Bukkit.getPlayer(katki.getKey()) : null;
             if (bp != null && bp.getName().matches("[A-Za-z0-9_]{1,16}")) {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "basarimsayac " + bp.getName() + " zindan_boss 1");
+                // Klan-Sistemi NPC klan gorevi (zindan temizleme) - konsol komutu, KlanSistemi yoksa sessizce bos gider
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "npczindan " + bp.getName() + " " + z.id);
             }
         }
         if (toplamHasar <= 0) return;
