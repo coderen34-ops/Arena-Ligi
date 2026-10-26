@@ -43,7 +43,7 @@ mac:
 bahis:
   min: 50
   max-mac: 15000             # Bir oyuncunun bir maça toplam bahis üst sınırı
-  gunluk-max: 20000          # Bir oyuncunun günlük toplam bahis sınırı
+  gunluk-max: 0              # Günlük toplam bahis sınırı; 0 = sınır yok (bahis havuzdan dağıtıldığı için enflasyon riski yok)
   komisyon: 0.10             # Havuzdan kesilen pay
   komisyon-kazanan-payi: 0.5 # Komisyonun kazanan dövüşçüye giden kısmı; kalanı belediye kasasına
   ayni-ip-engel: true        # Dövüşçüyle aynı IP'den bahis engellenir ve adminlere bildirilir

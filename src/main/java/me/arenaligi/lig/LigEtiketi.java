@@ -64,7 +64,7 @@ public class LigEtiketi {
         for (Dovuscu d : plugin.dovusculer().hepsi()) {
             Player p = Bukkit.getPlayer(d.uuid);
             if (p == null || !p.isOnline()) { kaldir(d); continue; }
-            if (gorunmeliMi(p)) uygula(d); else kaldir(d);
+            if (gorunmeliMi(p)) { if (!gorunenler.contains(d.uuid)) uygula(d); } else kaldir(d); // girişte bir kere uygula; her saniye tekrar atama
         }
     }
 

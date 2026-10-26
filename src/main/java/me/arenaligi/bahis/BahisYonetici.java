@@ -145,10 +145,7 @@ public class BahisYonetici {
         long bugun = LocalDate.now().toEpochDay();
         double[] g = gunluk.get(u);
         double bugunToplam = g != null && (long) g[0] == bugun ? g[1] : 0;
-        if (bugunToplam + miktar > gunlukMax()) {
-            m().gonder(p, "bahis-gunluk", "&cGünlük bahis sınırınız ${max} (bugün ${bugun} oynadınız).", "max", para(gunlukMax()), "bugun", para(bugunToplam));
-            return false;
-        }
+        // Günlük bahis sınırı kaldırıldı (karar: havuzdan dağıtıldığı için enflasyon riski yok); bugunToplam sadece istatistik
         String ipSorunu = ayniIp(p, mac);
         if (ipSorunu != null) {
             plugin.meslek().ekonomiLog("arena-bahis", p.getName(), "ENGELLENDİ (aynı IP: " + ipSorunu + ") maç " + mac.id + " $" + para(miktar));
