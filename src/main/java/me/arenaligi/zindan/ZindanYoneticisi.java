@@ -217,7 +217,7 @@ public class ZindanYoneticisi implements Listener {
         z.katYuksekligi = katYuksekligi;
         z.olusturulmaZamani = System.currentTimeMillis();
         // Kullanıcı isteği (Ekim 2026): "Wither" yeni bir boss varyantı olarak eklendi (KARA_RUH).
-        String[] bossSecenekleri = {"TAS_YURUYEN", "KAN_CELLAT", "ISKELET_KRALI", "KARA_RUH"};
+        String[] bossSecenekleri = {"TAS_YURUYEN", "KAN_CELLAT", "ISKELET_KRALI", "KARA_RUH", "DEV_ZOMBI", "CUCE_ZOMBI"};
         z.bossVaryanti = bossSecenekleri[rng.nextInt(bossSecenekleri.length)];
         zindanlar.put(z.id, z);
 
@@ -367,10 +367,10 @@ public class ZindanYoneticisi implements Listener {
                 uzunMenzilliCanlilar.add(canli.getUniqueId());
             }
             case ZIRHLI -> {
-                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.25);
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.15);
                 AttributeInstance canAttrZ = canli.getAttribute(Attribute.MAX_HEALTH);
                 if (canAttrZ != null) {
-                    canAttrZ.setBaseValue(canAttrZ.getBaseValue() * 1.35);
+                    canAttrZ.setBaseValue(canAttrZ.getBaseValue() * 1.2);
                     canli.setHealth(canAttrZ.getBaseValue());
                 }
                 buyukluk(canli, 1.15 + Math.min(0.35, tier * 0.05));
@@ -415,11 +415,17 @@ public class ZindanYoneticisi implements Listener {
             case "TAS_YURUYEN" -> EntityType.RAVAGER;
             case "KAN_CELLAT" -> EntityType.VINDICATOR;
             case "KARA_RUH" -> EntityType.WITHER;
+            case "DEV_ZOMBI", "CUCE_ZOMBI" -> EntityType.ZOMBIE;
             default -> EntityType.SKELETON;
         };
         int tier = kat + 1;
         LivingEntity boss = canliDogur(z, kat, tier, tur, ks.bossNoktasi, rng, true);
-        boss.setCustomName(ChatColor.DARK_RED + z.isim + " - " + bossGorunenAd(z.bossVaryanti));
+        // Boss kademesi (varsayim: kat sayisina gore) - 1 mini-boss, 2 boss, 3 efsanevi
+        int kademe = z.katSayisi >= 6 ? 3 : (z.katSayisi >= 4 ? 2 : 1);
+        double kademeCan = new double[]{1.0, 1.4, 2.0}[kademe - 1];
+        double kademeHasar = new double[]{1.0, 1.2, 1.5}[kademe - 1];
+        String kademeAd = new String[]{"Mini-Boss", "Boss", "Efsanevi"}[kademe - 1];
+        boss.setCustomName(ChatColor.DARK_RED + z.isim + " - " + kademeAd + " " + bossGorunenAd(z.bossVaryanti));
         boss.setCustomNameVisible(true);
 
         AttributeInstance canAttr = boss.getAttribute(Attribute.MAX_HEALTH);
@@ -452,7 +458,24 @@ public class ZindanYoneticisi implements Listener {
                 if (canAttr != null) canAttr.setBaseValue(temelCan * 1.9);
                 if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.4);
             }
+            case "DEV_ZOMBI" -> {
+                if (canAttr != null) canAttr.setBaseValue(temelCan * 2.4);
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.5);
+                AttributeInstance kb = boss.getAttribute(Attribute.KNOCKBACK_RESISTANCE);
+                if (kb != null) kb.setBaseValue(0.8);
+                buyukluk(boss, 1.6 + 0.15 * kademe);
+                zirhGiydir(boss);
+                boss.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Integer.MAX_VALUE, 0, false, false));
+            }
+            case "CUCE_ZOMBI" -> {
+                if (canAttr != null) canAttr.setBaseValue(temelCan * 1.3);
+                if (hasarAttr != null) hasarAttr.setBaseValue(temelHasar * 1.6);
+                buyukluk(boss, 0.5);
+                boss.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 3, false, false));
+            }
         }
+        if (canAttr != null) canAttr.setBaseValue(canAttr.getBaseValue() * kademeCan);
+        if (hasarAttr != null) hasarAttr.setBaseValue(hasarAttr.getBaseValue() * kademeHasar);
         if (canAttr != null) boss.setHealth(canAttr.getBaseValue());
         z.bossUuid = boss.getUniqueId();
     }
@@ -481,6 +504,8 @@ public class ZindanYoneticisi implements Listener {
             case "KAN_CELLAT" -> "Kan Cellat";
             case "ISKELET_KRALI" -> "İskelet Kralı";
             case "KARA_RUH" -> "Kara Ruh";
+            case "DEV_ZOMBI" -> "Dev Zombi";
+            case "CUCE_ZOMBI" -> "Cüce Zombi";
             default -> varyant;
         };
     }
