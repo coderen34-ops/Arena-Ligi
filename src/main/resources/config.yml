@@ -262,6 +262,7 @@ mesajlar:
 # /arena admin zindan uret ile anlık de üretilebilir. bkz. me.arenaligi.zindan.ZindanYoneticisi.
 zindan:
   dunya: world
+  max-aktif-zindan-sayisi: 30       # Aynı anda en fazla bu kadar temizlenmemiş zindan (üst sınır)
   min-aktif-zindan-sayisi: 2        # Temizlenmemiş zindan sayısı bunun altına düşerse otomatik yeni üretilir
   otomatik-kontrol-dakika: 30       # Bu sıklıkla aktif zindan sayısı kontrol edilir
   min-spawn-uzakligi: 1200          # Dünya spawn'ından minimum uzaklık (blok)

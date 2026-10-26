@@ -201,6 +201,7 @@ public class ZindanYoneticisi implements Listener {
     // ------------------------------------------------------------------ ÜRETİM
     /** merkezNoktasi null ise dünya spawn'ından min/max-spawn-uzakligi aralığı; verilmişse o noktanın ~0-400 blok civarı. */
     public Zindan otomatikUret(Location merkezNoktasi) {
+        if (aktifZindanSayisi() >= plugin.getConfig().getInt("zindan.max-aktif-zindan-sayisi", 30)) return null; // uretim ust siniri
         World w = dunya();
         Random rng = new Random();
         Location yuzeyNoktasi = rastgeleKonumBul(w, rng, merkezNoktasi);
