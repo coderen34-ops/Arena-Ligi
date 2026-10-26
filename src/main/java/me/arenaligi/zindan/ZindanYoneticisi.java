@@ -478,7 +478,35 @@ public class ZindanYoneticisi implements Listener {
         if (canAttr != null) canAttr.setBaseValue(canAttr.getBaseValue() * kademeCan);
         if (hasarAttr != null) hasarAttr.setBaseValue(hasarAttr.getBaseValue() * kademeHasar);
         if (canAttr != null) boss.setHealth(canAttr.getBaseValue());
+        // Boss hareket özellikleri: daha hızlı koşu (+%25) ve güçlü zıplama/sıçrayış
+        AttributeInstance hizAttr = boss.getAttribute(Attribute.MOVEMENT_SPEED);
+        if (hizAttr != null && !"TAS_YURUYEN".equals(z.bossVaryanti) && !"DEV_ZOMBI".equals(z.bossVaryanti)) hizAttr.setBaseValue(hizAttr.getBaseValue() * 1.25);
+        bossHareketBaslat(z, boss.getUniqueId());
         z.bossUuid = boss.getUniqueId();
+    }
+
+    /** Vanilla mob AI'ında zıplama sabit olduğundan: hedef yüksekteyse / yol kesikse güçlü yukarı hız, hedef
+     *  4-12 blok uzaktaysa periyodik sıçrama atağı (boss'a "oyunda olmayan bir yaratık" hissi verir). */
+    private void bossHareketBaslat(Zindan z, UUID bossUuid) {
+        BukkitTask[] ref = new BukkitTask[1];
+        int[] sayac = {0};
+        ref[0] = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            Entity e = Bukkit.getEntity(bossUuid);
+            if (!(e instanceof org.bukkit.entity.Mob m) || m.isDead() || z.temizlendi) { if (ref[0] != null) ref[0].cancel(); return; }
+            LivingEntity hedef = m.getTarget();
+            if (hedef == null || !m.isOnGround()) return;
+            sayac[0]++;
+            Vector fark = hedef.getLocation().toVector().subtract(m.getLocation().toVector());
+            double yatay = Math.hypot(fark.getX(), fark.getZ());
+            if (fark.getY() >= 1.2 && yatay < 6) { // hedef yüksekte: yüksek zıpla
+                Vector v = m.getVelocity(); v.setY(0.75); m.setVelocity(v);
+            } else if (yatay >= 4 && yatay <= 12 && sayac[0] % 8 == 0) { // ~4 sn'de bir sıçrama atağı
+                Vector yon = new Vector(fark.getX(), 0, fark.getZ()).normalize().multiply(0.9);
+                yon.setY(0.65);
+                m.setVelocity(yon);
+                m.getWorld().playSound(m.getLocation(), org.bukkit.Sound.ENTITY_RAVAGER_ROAR, 0.6f, 1.4f);
+            }
+        }, 10L, 10L);
     }
 
     /** İskelet Kralı için: yaşadığı sürece periyodik ok yağmuru - diğer varyantların yakın dövüş üstünlüğüne karşı ranged baskı. */
