@@ -560,6 +560,13 @@ public class ZindanYoneticisi implements Listener {
         if (z.bossOduluSandigi != null) sandikDoldur(z.bossOduluSandigi, z.katSayisi, new Random());
 
         double toplamHasar = z.bossHasarKatkisi.values().stream().mapToDouble(Double::doubleValue).sum();
+        // Başarım: boss'a hasar veren çevrimiçi oyuncular zindan_boss sayacını artırır (MeslekSistemi konsol komutu)
+        for (Map.Entry<UUID, Double> katki : z.bossHasarKatkisi.entrySet()) {
+            Player bp = katki.getValue() > 0 ? Bukkit.getPlayer(katki.getKey()) : null;
+            if (bp != null && bp.getName().matches("[A-Za-z0-9_]{1,16}")) {
+                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "basarimsayac " + bp.getName() + " zindan_boss 1");
+            }
+        }
         if (toplamHasar <= 0) return;
         // Zorluk göstergesi = kat sayısı (min-kat..max-kat arası) - kolay zindan boss-odul-min civarı,
         // zor (en çok kat) zindan boss-odul-max civarı ödül verir. Toplamda tüm oyuncular arası paylaşılır.
