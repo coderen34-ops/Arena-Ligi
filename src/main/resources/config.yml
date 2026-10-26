@@ -266,6 +266,7 @@ zindan:
   otomatik-kontrol-dakika: 30       # Bu sıklıkla aktif zindan sayısı kontrol edilir
   min-spawn-uzakligi: 1200          # Dünya spawn'ından minimum uzaklık (blok)
   max-spawn-uzakligi: 6000          # Dünya spawn'ından maksimum uzaklık (blok)
+  yasak-alan-yaricap: 64            # Köy bölgesi ve claim'lere en az bu kadar (yapı yarıçapı + tampon) blok uzakta üretilir
   zindanlar-arasi-min-uzaklik: 400  # İki zindan birbirinden en az bu kadar uzak olur
   yakinlik-esigi: 2800              # Bir oyuncunun en yakın zindana uzaklığı bunu aşarsa (keşifte "boş bölge") yeni zindan üretilir
   yakinlik-spawn-uzakligi: 1000     # Yukarıdaki durumda yeni zindan, oyuncunun bu kadar (rastgele yönde) ötesine üretilir

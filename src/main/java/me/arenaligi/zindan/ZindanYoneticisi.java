@@ -282,6 +282,8 @@ public class ZindanYoneticisi implements Listener {
             if (yuksekBlok < 50 || yuksekBlok > 200) continue;
             Material ust = w.getBlockAt(x, yuksekBlok, z).getType();
             if (ust == Material.WATER || ust == Material.LAVA || ust == Material.ICE || ust == Material.PACKED_ICE) continue;
+            // Köy bölgesi ve tüm claim'ler (yapı yarıçapı + tampon) yasak: config zindan.yasak-alan-yaricap
+            if (YasakAlan.engelliMi(w, x, z, plugin.getConfig().getInt("zindan.yasak-alan-yaricap", 64))) continue;
             return new Location(w, x, yuksekBlok, z);
         }
         return null;
