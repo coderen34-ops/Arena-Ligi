@@ -163,4 +163,9 @@ public class ArenaLigi extends JavaPlugin {
     public EtkinlikYonetici etkinlik() { return etkinlik; }
     public me.arenaligi.turnuva.TurnuvaYonetici turnuva() { return turnuva; }
     public me.arenaligi.zindan.ZindanYoneticisi zindan() { return zindan; }
+
+    /** Meslek arayüzü: arena/turnuva maçındaki oyuncular herkesin ismini görür. */
+    public boolean isimTamGorunur(org.bukkit.entity.Player p) {
+        return mac != null && mac.macta(p.getUniqueId());
+    }
 }
