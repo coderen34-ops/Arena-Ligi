@@ -1,0 +1,21 @@
+name: ArenaLigi
+version: '1.0'
+main: me.arenaligi.ArenaLigi
+api-version: '26.2'
+description: 1v1 Arena Ligi - lig, eşit kit, otomatik maçlar ve bahis (MeslekSistemi ekonomisiyle)
+depend: [MeslekSistemi]
+softdepend: [TagPlugin]
+
+commands:
+  arena:
+    description: Arena Ligi komutları
+    usage: /arena <sira|ayril|istatistik|siralama|yardim>
+    permission: arena.kullan
+
+permissions:
+  arena.kullan:
+    description: Arena Ligi'ne kayıt, maç sırası, istatistik ve bahis
+    default: true
+  arena.admin:
+    description: Arena kurulumu, NPC'ler, kitler, maç iptali ve puan ayarı
+    default: op
